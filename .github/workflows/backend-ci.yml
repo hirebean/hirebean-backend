@@ -41,11 +41,13 @@ jobs:
       #3 Docker HUB
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
+        if: github.event_name == 'workflow_dispatch'
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and Push Docker Image
+        if: github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -54,11 +56,13 @@ jobs:
 
       #4 Kubernetes
       - name: Create Kind Cluster
+        if: github.event_name == 'workflow_dispatch'
         uses: helm/kind-action@v1.8.0
         with:
           cluster_name: kind
 
       - name: Deploy to Kind
+        if: github.event_name == 'workflow_dispatch'
         run: |
           # 1 . Create namespace
           kubectl create namespace hirebean
@@ -82,6 +86,7 @@ jobs:
                       --timeout=180s
 
       - name: Verify Deployment
+        if: github.event_name == 'workflow_dispatch'
         run: |
           echo "Waiting for Postgres to be ready..."
           kubectl wait --namespace hirebean \
