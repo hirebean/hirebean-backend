@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hirebean-backend
+  namespace: hirebean
 spec:
   replicas: 1
   selector:
@@ -20,9 +21,15 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: jdbc:postgresql://postgres:5432/hirebean_db
             - name: HIREBEAN_DB_USERNAME
-              value: myuser
+              valueFrom:
+                secretKeyRef:
+                  name: hirebean-db-secret
+                  key: HIREBEAN_DB_USERNAME
             - name: HIREBEAN_DB_PASS
-              value: mypassword
+              valueFrom:
+                  secretKeyRef:
+                    name: hirebean-db-secret
+                    key: HIREBEAN_DB_PASS
           ports:
             - containerPort: 8080
 ---
@@ -37,4 +44,4 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: LoadBalancer
+  type: ClusterIP

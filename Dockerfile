@@ -1,5 +1,5 @@
 #Build app
-FROM gradle:8.5-jdk23 AS builder
+FROM gradle:8.12.0-jdk23 AS builder
 WORKDIR /app
 COPY . .
 
