@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-check:
+  build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,72 @@ jobs:
       - name: Check Formatting (Spotless)
         run: ./gradlew spotlessCheck
 
-      #compile and run tests
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      #2 Security Scan with trivy
+      - name: Security Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-ref: '.'
+          scan-type: 'fs'
+          trivy-config: trivy.yaml
+          exit-code: '0' # dont end pipeline when error ocurs
+          ignore-unfixed: true
+
+      #3 Docker HUB
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/hirebean-backend:latest
+
+      #4 Kubernetes
+      - name: Create Kind Cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: kind
+
+      - name: Deploy to Kind
+        run: |
+          # 1 . Create namespace
+          kubectl create namespace hirebean
+          
+          # 2 . applying secret for postgres
+          kubectl create secret generic hirebean-db-secret \
+          --namespace hirebean \
+          --from-literal=HIREBEAN_DB_USERNAME=${{ secrets.HIREBEAN_DB_USERNAME }} \
+          --from-literal=HIREBEAN_DB_PASS=${{ secrets.HIREBEAN_DB_PASS }}
+          
+          # 3. Starting Postgres
+          kubectl apply -f k8s/postgres-deployment.yaml -n hirebean
+          
+          # 4. Applying Backend Deployment
+          kubectl apply -f k8s/backend-deployment.yaml -n hirebean
+          
+          #Wait for pods to be ready
+          kubectl wait --namespace hirebean \
+                      --for=condition=ready pod \
+                      --selector=app=hirebean-backend \
+                      --timeout=180s
+
+      - name: Verify Deployment
+        run: |
+          echo "Pods in hirebean namespace:"
+          kubectl get pods -n hirebean
+          echo "Services in hirebean namespace:"
+          kubectl get svc -n hirebean
+          echo "=== POD LOGS (if failed) ==="
+          kubectl logs -l app=hirebean-backend -n hirebean --tail=50 || true
+          #Port forward to access the backend service
+          kubectl port-forward svc/hirebean-backend-service 8080:80 -n hirebean &
+          sleep 10
+          #Check if the backend is responding
+          curl -f http://localhost:8080/actuator/health
