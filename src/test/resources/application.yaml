@@ -5,6 +5,16 @@ spring:
     username: sa
     password: ""
 
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      credentials:
+        access-key: test-key
+        secret-key: test-secret
+      s3:
+        bucket: test-bucket
+
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
@@ -13,3 +23,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+cdn:
+  url: http://localhost-cdn
