@@ -20,7 +20,7 @@ public class AwsS3Config {
     @Value("${spring.cloud.aws.region.static}")
     private String region;
 
-    @Bean
+    @Bean(destroyMethod = "close")
     public S3Presigner s3Presigner() {
         return S3Presigner.builder()
                 .region(Region.of(region))
