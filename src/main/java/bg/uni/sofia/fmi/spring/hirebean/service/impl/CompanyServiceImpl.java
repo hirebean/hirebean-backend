@@ -5,6 +5,7 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
+import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CompanyServiceImpl implements CompanyService {
+  private final S3Service s3Service;
+
   private final CompanyRepository companyRepository;
 
   private CompanyResponse mapToResponse(Company company) {
@@ -22,7 +25,7 @@ public class CompanyServiceImpl implements CompanyService {
         .name(company.getName())
         .description(company.getDescription())
         .websiteUrl(company.getWebsiteUrl())
-        .logoUrl(company.getLogoUrl())
+        .logoUrl(s3Service.getPublicUrl(company.getLogoUrl()))
         .location(company.getLocation())
         .createdAt(company.getCreatedAt())
         .build();

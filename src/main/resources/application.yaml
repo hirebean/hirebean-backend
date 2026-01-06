@@ -1,6 +1,23 @@
 spring:
   application:
     name: hirebean
+
+  # AWS S3 Configuration
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ${AWS_REGION}
+      s3:
+        bucket: ${AWS_S3_BUCKET_NAME}
+  # Setting for uploading files
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,3 +40,6 @@ management:
   endpoint:
     health:
       show-details: always
+
+cdn:
+  url: ${CDN_URL}
