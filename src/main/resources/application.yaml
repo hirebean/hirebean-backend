@@ -14,3 +14,12 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${HIREBEAN_DB_USERNAME}
     password: ${HIREBEAN_DB_PASS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always

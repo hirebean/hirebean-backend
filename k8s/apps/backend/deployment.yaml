@@ -30,5 +30,20 @@ spec:
                 secretKeyRef:
                   name: hirebean-db-secret
                   key: HIREBEAN_DB_PASS
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
           ports:
             - containerPort: 8080
+
