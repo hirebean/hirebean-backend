@@ -6,9 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface JobOfferService {
-  Page<JobOfferResponse> getAllOffers(Pageable pageable);
 
-  JobOfferResponse getOfferById(Long id);
+    Page<JobOfferResponse> getAllOffers(Pageable pageable);
 
-  JobOfferResponse createOffer(JobOfferRequest request);
+    JobOfferResponse getOfferById(Long id);
+
+    JobOfferResponse createOffer(JobOfferRequest request);
+
 }

@@ -11,23 +11,26 @@ import lombok.Data;
 @Data
 public class JobOfferRequest {
 
-  @NotBlank(message = "Title is required")
-  private String title;
+    @NotBlank(message = "Title is required")
+    private String title;
 
-  @NotBlank(message = "Description is required")
-  private String description;
+    @NotBlank(message = "Description is required")
+    private String description;
 
-  private String location;
+    private String location;
 
-  @NotNull private JobType jobType;
+    @NotNull
+    private JobType jobType;
 
-  private BigDecimal minSalary;
-  private BigDecimal maxSalary;
+    private BigDecimal minSalary;
 
-  private JobStatus status;
+    private BigDecimal maxSalary;
 
-  @NotNull(message = "Company ID is required")
-  private Long companyId;
+    private JobStatus status;
 
-  private Set<String> tags;
+    @NotNull(message = "Company ID is required")
+    private Long companyId;
+
+    private Set<String> tags;
+
 }

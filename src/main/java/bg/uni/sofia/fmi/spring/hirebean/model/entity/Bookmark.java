@@ -15,9 +15,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(
-    name = "bookmarks",
-    uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "job_offer_id"})})
+@Table(name = "bookmarks", uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "job_offer_id"})})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,11 +25,12 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class Bookmark extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "job_offer_id", nullable = false)
-  private JobOffer jobOffer;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_offer_id", nullable = false)
+    private JobOffer jobOffer;
+
 }

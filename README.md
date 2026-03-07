@@ -1,4 +1,4 @@
-# HireBean-Backend, Spring Backend & React & Typescript app + Devops
+# HireBean-Backend, Spring Backend & React & Typescript app + Devops 
 
 # HireBean-Frontend is here -> https://github.com/darimachine/HireBean-Frontend
 ## Форматиране

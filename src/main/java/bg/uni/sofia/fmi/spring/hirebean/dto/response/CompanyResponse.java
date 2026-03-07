@@ -7,11 +7,13 @@ import lombok.Data;
 @Data
 @Builder
 public class CompanyResponse {
-  private Long id;
-  private String name;
-  private String description;
-  private String websiteUrl;
-  private String logoUrl;
-  private String location;
-  private LocalDateTime createdAt;
+
+    private Long id;
+    private String name;
+    private String description;
+    private String websiteUrl;
+    private String logoUrl;
+    private String location;
+    private LocalDateTime createdAt;
+
 }

@@ -15,16 +15,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 @Setter
 public abstract class BaseEntity {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @CreationTimestamp
-  @Column(updatable = false)
-  private LocalDateTime createdAt;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @UpdateTimestamp private LocalDateTime updatedAt;
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt; // soft delete
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt; // soft delete
+
 }

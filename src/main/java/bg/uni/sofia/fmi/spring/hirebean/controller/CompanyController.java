@@ -18,22 +18,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/companies")
 public class CompanyController {
-  private final CompanyService companyService;
 
-  @GetMapping
-  public ResponseEntity<List<CompanyResponse>> getAllCompanies() {
-    List<CompanyResponse> companies = companyService.getAllCompanies();
-    return ResponseEntity.ok(companies);
-  }
+    private final CompanyService companyService;
 
-  @GetMapping("/{id}")
-  public ResponseEntity<CompanyResponse> getCompanyById(@PathVariable Long id) {
-    CompanyResponse company = companyService.getCompanyById(id);
-    return ResponseEntity.ok(company);
-  }
+    @GetMapping
+    public ResponseEntity<List<CompanyResponse>> getAllCompanies() {
+        List<CompanyResponse> companies = companyService.getAllCompanies();
+        return ResponseEntity.ok(companies);
+    }
 
-  @PostMapping
-  public ResponseEntity<CompanyResponse> createCompany(@Valid @RequestBody CompanyRequest request) {
-    return ResponseEntity.ok(companyService.createCompany(request));
-  }
+    @GetMapping("/{id}")
+    public ResponseEntity<CompanyResponse> getCompanyById(@PathVariable Long id) {
+        CompanyResponse company = companyService.getCompanyById(id);
+        return ResponseEntity.ok(company);
+    }
+
+    @PostMapping
+    public ResponseEntity<CompanyResponse> createCompany(@Valid @RequestBody CompanyRequest request) {
+        return ResponseEntity.ok(companyService.createCompany(request));
+    }
+
 }

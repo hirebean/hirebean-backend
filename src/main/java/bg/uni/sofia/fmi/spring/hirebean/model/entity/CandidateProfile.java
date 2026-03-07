@@ -23,16 +23,18 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLDelete(sql = "UPDATE candidate_profiles SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class CandidateProfile extends BaseEntity {
-  @OneToOne
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
 
-  private String resumeUrl; // link to file
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @Column(columnDefinition = "TEXT")
-  private String bio;
+    private String resumeUrl; // link to file
 
-  private String linkedinUrl;
-  private String githubUrl;
-  private String jobTitle;
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    private String linkedinUrl;
+    private String githubUrl;
+    private String jobTitle;
+
 }

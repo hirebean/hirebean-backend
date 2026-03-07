@@ -25,15 +25,16 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class Notification extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User recipient;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User recipient;
 
-  @Column(nullable = false)
-  private String message;
+    @Column(nullable = false)
+    private String message;
 
-  @Column(nullable = false)
-  private boolean isRead = false;
+    @Column(nullable = false)
+    private boolean isRead = false;
 
-  private String type;
+    private String type;
+
 }

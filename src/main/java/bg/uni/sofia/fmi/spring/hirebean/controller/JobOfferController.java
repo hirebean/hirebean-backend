@@ -19,20 +19,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
 public class JobOfferController {
-  private final JobOfferService jobOfferService;
 
-  @GetMapping
-  public ResponseEntity<Page<JobOfferResponse>> getAllJobs(Pageable pageable) {
-    return ResponseEntity.ok(jobOfferService.getAllOffers(pageable));
-  }
+    private final JobOfferService jobOfferService;
 
-  @GetMapping("/{id}")
-  public ResponseEntity<JobOfferResponse> getJobById(@PathVariable Long id) {
-    return ResponseEntity.ok(jobOfferService.getOfferById(id));
-  }
+    @GetMapping
+    public ResponseEntity<Page<JobOfferResponse>> getAllJobs(Pageable pageable) {
+        return ResponseEntity.ok(jobOfferService.getAllOffers(pageable));
+    }
 
-  @PostMapping
-  public ResponseEntity<JobOfferResponse> createJob(@Valid @RequestBody JobOfferRequest request) {
-    return ResponseEntity.ok(jobOfferService.createOffer(request));
-  }
+    @GetMapping("/{id}")
+    public ResponseEntity<JobOfferResponse> getJobById(@PathVariable Long id) {
+        return ResponseEntity.ok(jobOfferService.getOfferById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<JobOfferResponse> createJob(@Valid @RequestBody JobOfferRequest request) {
+        return ResponseEntity.ok(jobOfferService.createOffer(request));
+    }
+
 }

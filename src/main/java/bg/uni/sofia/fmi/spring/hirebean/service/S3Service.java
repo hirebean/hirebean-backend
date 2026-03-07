@@ -16,76 +16,79 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 @RequiredArgsConstructor
 public class S3Service {
 
-  private final S3Template s3Template;
-  private final S3Presigner s3Presigner;
+    private final S3Template s3Template;
+    private final S3Presigner s3Presigner;
 
-  @Value("${spring.cloud.aws.s3.bucket}")
-  private String bucketName;
+    @Value("${spring.cloud.aws.s3.bucket}")
+    private String bucketName;
 
-  @Value("${cdn.url}")
-  private String cdnUrl;
+    @Value("${cdn.url}")
+    private String cdnUrl;
 
-  private static final long MAX_FILE_BYTES = 10L * 1024 * 1024; // 10 MB
+    private static final long MAX_FILE_BYTES = 10L * 1024 * 1024; // 10 MB
 
-  // Upload a file and return its key.
-  // Example: logos/uuid-filename.png.
-  public String uploadFile(MultipartFile file, String folder) {
-    if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("File must not be null or empty.");
+    // Upload a file and return its key.
+    // Example: logos/uuid-filename.png.
+    public String uploadFile(MultipartFile file, String folder) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be null or empty.");
+        }
+
+        long size = file.getSize();
+        if (size <= 0 || size > MAX_FILE_BYTES) {
+            throw new IllegalArgumentException("File size is invalid or exceeds the maximum allowed size.");
+        }
+
+        if (folder == null || folder.isBlank()) {
+            throw new IllegalArgumentException("Invalid folder.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                : "";
+
+        // preventing collision generating unique name!!!
+        String key = folder + "/" + UUID.randomUUID() + extension;
+        try {
+            s3Template.upload(bucketName, key, file.getInputStream());
+            return key;
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    String.format("Failed to upload file to S3 (bucket=%s, key=%s, originalFilename=%s)", bucketName,
+                            key, originalFilename),
+                    e);
+        }
     }
 
-    long size = file.getSize();
-    if (size <= 0 || size > MAX_FILE_BYTES) {
-      throw new IllegalArgumentException(
-          "File size is invalid or exceeds the maximum allowed size.");
+    // For public URLS we use CDN!!!
+    public String getPublicUrl(String key) {
+        if (key == null || key.isBlank())
+            return null;
+
+        String baseUrl = cdnUrl.endsWith("/") ? cdnUrl.substring(0, cdnUrl.length() - 1) : cdnUrl;
+        return baseUrl + "/" + key;
     }
 
-    if (folder == null || folder.isBlank()) {
-      throw new IllegalArgumentException("Invalid folder.");
+    // For private files such as CV and personal INFO
+    public String getPresignedUrl(String key) {
+        if (key == null || key.isBlank())
+            return null;
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(10))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(getObjectPresignRequest)
+                .url()
+                .toString();
     }
 
-    String originalFilename = file.getOriginalFilename();
-    String extension =
-        originalFilename != null && originalFilename.contains(".")
-            ? originalFilename.substring(originalFilename.lastIndexOf('.'))
-            : "";
-
-    // preventing collision generating unique name!!!
-    String key = folder + "/" + UUID.randomUUID() + extension;
-    try {
-      s3Template.upload(bucketName, key, file.getInputStream());
-      return key;
-
-    } catch (IOException e) {
-      throw new RuntimeException(
-          String.format(
-              "Failed to upload file to S3 (bucket=%s, key=%s, originalFilename=%s)",
-              bucketName, key, originalFilename),
-          e);
-    }
-  }
-
-  // For public URLS we use CDN!!!
-  public String getPublicUrl(String key) {
-    if (key == null || key.isBlank()) return null;
-
-    String baseUrl = cdnUrl.endsWith("/") ? cdnUrl.substring(0, cdnUrl.length() - 1) : cdnUrl;
-    return baseUrl + "/" + key;
-  }
-
-  // For private files such as CV and personal INFO
-  public String getPresignedUrl(String key) {
-    if (key == null || key.isBlank()) return null;
-
-    GetObjectRequest getObjectRequest =
-        GetObjectRequest.builder().bucket(bucketName).key(key).build();
-
-    GetObjectPresignRequest getObjectPresignRequest =
-        GetObjectPresignRequest.builder()
-            .signatureDuration(Duration.ofMinutes(10))
-            .getObjectRequest(getObjectRequest)
-            .build();
-
-    return s3Presigner.presignGetObject(getObjectPresignRequest).url().toString();
-  }
 }

@@ -25,28 +25,30 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @Builder
 public class Log {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @Column(nullable = false)
-  private String action;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false)
-  private String entity;
+    @Column(nullable = false)
+    private String action;
 
-  private Long entityId;
+    @Column(nullable = false)
+    private String entity;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id")
-  private User actor;
+    private Long entityId;
 
-  private String details;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User actor;
 
-  @Column(nullable = false)
-  private String severity;
+    private String details;
 
-  @CreationTimestamp
-  @Column(updatable = false)
-  private LocalDateTime timestamp;
+    @Column(nullable = false)
+    private String severity;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime timestamp;
+
 }

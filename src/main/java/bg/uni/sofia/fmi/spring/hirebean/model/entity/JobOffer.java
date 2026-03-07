@@ -34,29 +34,30 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class JobOffer extends BaseEntity {
 
-  @Column(nullable = false)
-  private String title;
+    @Column(nullable = false)
+    private String title;
 
-  @Column(columnDefinition = "TEXT", nullable = false)
-  private String description;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String description;
 
-  private String location;
+    private String location;
 
-  @Enumerated(EnumType.STRING)
-  private JobType jobType;
+    @Enumerated(EnumType.STRING)
+    private JobType jobType;
 
-  private BigDecimal minSalary;
-  private BigDecimal maxSalary;
+    private BigDecimal minSalary;
+    private BigDecimal maxSalary;
 
-  @Enumerated(EnumType.STRING)
-  private JobStatus status;
+    @Enumerated(EnumType.STRING)
+    private JobStatus status;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "company_id", nullable = false)
-  private Company company;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 
-  @ElementCollection
-  @CollectionTable(name = "job_tags", joinColumns = @JoinColumn(name = "job_id"))
-  @Column(name = "tag")
-  private Set<String> tags = new HashSet<>();
+    @ElementCollection
+    @CollectionTable(name = "job_tags", joinColumns = @JoinColumn(name = "job_id"))
+    @Column(name = "tag")
+    private Set<String> tags = new HashSet<>();
+
 }

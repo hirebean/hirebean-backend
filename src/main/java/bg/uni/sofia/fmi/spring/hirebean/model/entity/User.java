@@ -31,29 +31,27 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class User extends BaseEntity {
 
-  @Column(unique = true, nullable = false)
-  private String email;
+    @Column(unique = true, nullable = false)
+    private String email;
 
-  @Column(nullable = false)
-  private String password; // make a Hash.
+    @Column(nullable = false)
+    private String password; // make a Hash.
 
-  @Column(name = "first_name")
-  private String firstName;
+    @Column(name = "first_name")
+    private String firstName;
 
-  @Column(name = "last_name")
-  private String lastName;
+    @Column(name = "last_name")
+    private String lastName;
 
-  @ManyToMany(fetch = FetchType.EAGER)
-  @JoinTable(
-      name = "user_roles",
-      joinColumns = @JoinColumn(name = "user_id"),
-      inverseJoinColumns = @JoinColumn(name = "role_id"))
-  private Set<Role> roles = new HashSet<>();
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
 
-  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-  private CandidateProfile candidateProfile;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private CandidateProfile candidateProfile;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "company_id")
-  private Company company;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
 }

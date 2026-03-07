@@ -5,9 +5,11 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
 import java.util.List;
 
 public interface CompanyService {
-  List<CompanyResponse> getAllCompanies();
 
-  CompanyResponse getCompanyById(Long id);
+    List<CompanyResponse> getAllCompanies();
 
-  CompanyResponse createCompany(CompanyRequest request);
+    CompanyResponse getCompanyById(Long id);
+
+    CompanyResponse createCompany(CompanyRequest request);
+
 }

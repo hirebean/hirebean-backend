@@ -28,17 +28,18 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class JobApplication extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "candidate_id", nullable = false)
-  private User candidate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "candidate_id", nullable = false)
+    private User candidate;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "job_offer_id", nullable = false)
-  private JobOffer jobOffer;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_offer_id", nullable = false)
+    private JobOffer jobOffer;
 
-  @Column(columnDefinition = "TEXT")
-  private String coverLetter;
+    @Column(columnDefinition = "TEXT")
+    private String coverLetter;
 
-  @Enumerated(EnumType.STRING)
-  private ApplicationStatus status;
+    @Enumerated(EnumType.STRING)
+    private ApplicationStatus status;
+
 }

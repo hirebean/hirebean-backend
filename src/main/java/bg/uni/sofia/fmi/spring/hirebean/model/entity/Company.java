@@ -25,21 +25,22 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 public class Company extends BaseEntity {
 
-  @Column(nullable = false, unique = true)
-  private String name;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-  @Column(columnDefinition = "TEXT")
-  private String description;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-  private String websiteUrl;
+    private String websiteUrl;
 
-  private String logoUrl; // link to file
+    private String logoUrl; // link to file
 
-  private String location;
+    private String location;
 
-  @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
-  private List<JobOffer> jobOffers;
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
+    private List<JobOffer> jobOffers;
 
-  @OneToMany(mappedBy = "company")
-  private List<User> employees;
+    @OneToMany(mappedBy = "company")
+    private List<User> employees;
+
 }

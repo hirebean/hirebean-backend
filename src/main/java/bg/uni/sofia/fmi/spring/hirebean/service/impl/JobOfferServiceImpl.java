@@ -17,65 +17,63 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class JobOfferServiceImpl implements JobOfferService {
 
-  private final JobOfferRepository jobOfferRepository;
-  private final CompanyRepository companyRepository;
+    private final JobOfferRepository jobOfferRepository;
+    private final CompanyRepository companyRepository;
 
-  private JobOfferResponse mapToResponse(JobOffer jobOffer) {
+    private JobOfferResponse mapToResponse(JobOffer jobOffer) {
 
-    return JobOfferResponse.builder()
-        .id(jobOffer.getId())
-        .title(jobOffer.getTitle())
-        .description(jobOffer.getDescription())
-        .location(jobOffer.getLocation())
-        .minSalary(jobOffer.getMinSalary())
-        .maxSalary(jobOffer.getMaxSalary())
-        .jobType(jobOffer.getJobType())
-        .status(jobOffer.getStatus())
-        .createdAt(jobOffer.getCreatedAt())
-        .companyId(jobOffer.getCompany().getId())
-        .companyName(jobOffer.getCompany().getName())
-        .companyLogoUrl(jobOffer.getDescription())
-        .tags(jobOffer.getTags())
-        .build();
-  }
+        return JobOfferResponse.builder()
+                .id(jobOffer.getId())
+                .title(jobOffer.getTitle())
+                .description(jobOffer.getDescription())
+                .location(jobOffer.getLocation())
+                .minSalary(jobOffer.getMinSalary())
+                .maxSalary(jobOffer.getMaxSalary())
+                .jobType(jobOffer.getJobType())
+                .status(jobOffer.getStatus())
+                .createdAt(jobOffer.getCreatedAt())
+                .companyId(jobOffer.getCompany()
+                        .getId())
+                .companyName(jobOffer.getCompany()
+                        .getName())
+                .companyLogoUrl(jobOffer.getDescription())
+                .tags(jobOffer.getTags())
+                .build();
+    }
 
-  @Override
-  @Transactional(readOnly = true)
-  public Page<JobOfferResponse> getAllOffers(Pageable pageable) {
-    return jobOfferRepository.findAll(pageable).map(this::mapToResponse);
-  }
+    @Override
+    @Transactional(readOnly = true)
+    public Page<JobOfferResponse> getAllOffers(Pageable pageable) {
+        return jobOfferRepository.findAll(pageable)
+                .map(this::mapToResponse);
+    }
 
-  @Override
-  public JobOfferResponse getOfferById(Long id) {
-    JobOffer jobOffer =
-        jobOfferRepository
-            .findById(id)
-            .orElseThrow(() -> new RuntimeException("Job offer not found with id: " + id));
-    return mapToResponse(jobOffer);
-  }
+    @Override
+    public JobOfferResponse getOfferById(Long id) {
+        JobOffer jobOffer = jobOfferRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Job offer not found with id: " + id));
+        return mapToResponse(jobOffer);
+    }
 
-  @Override
-  @Transactional
-  public JobOfferResponse createOffer(JobOfferRequest request) {
-    Company company =
-        companyRepository
-            .findById(request.getCompanyId())
-            .orElseThrow(
-                () -> new RuntimeException("Company not found with id: " + request.getCompanyId()));
+    @Override
+    @Transactional
+    public JobOfferResponse createOffer(JobOfferRequest request) {
+        Company company = companyRepository.findById(request.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("Company not found with id: " + request.getCompanyId()));
 
-    JobOffer jobOffer =
-        JobOffer.builder()
-            .title(request.getTitle())
-            .description(request.getDescription())
-            .location(request.getLocation())
-            .minSalary(request.getMinSalary())
-            .maxSalary(request.getMaxSalary())
-            .jobType(request.getJobType())
-            .status(request.getStatus())
-            .tags(request.getTags())
-            .company(company)
-            .build();
+        JobOffer jobOffer = JobOffer.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .location(request.getLocation())
+                .minSalary(request.getMinSalary())
+                .maxSalary(request.getMaxSalary())
+                .jobType(request.getJobType())
+                .status(request.getStatus())
+                .tags(request.getTags())
+                .company(company)
+                .build();
 
-    return mapToResponse(jobOfferRepository.save(jobOffer));
-  }
+        return mapToResponse(jobOfferRepository.save(jobOffer));
+    }
+
 }
