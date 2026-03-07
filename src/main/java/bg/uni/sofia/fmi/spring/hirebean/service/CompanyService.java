@@ -11,5 +11,4 @@ public interface CompanyService {
     CompanyResponse getCompanyById(Long id);
 
     CompanyResponse createCompany(CompanyRequest request);
-
 }

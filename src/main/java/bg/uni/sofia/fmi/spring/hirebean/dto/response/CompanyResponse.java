@@ -15,5 +15,4 @@ public class CompanyResponse {
     private String logoUrl;
     private String location;
     private LocalDateTime createdAt;
-
 }

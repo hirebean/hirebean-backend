@@ -18,11 +18,10 @@ public class FileController {
     private final S3Service s3Service;
 
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file,
-                                                          @RequestParam("folder") String folder) {
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @RequestParam("file") MultipartFile file, @RequestParam("folder") String folder) {
         String key = s3Service.uploadFile(file, folder);
         String publicUrl = s3Service.getPublicUrl(key);
         return ResponseEntity.ok(Map.of("key", key, "publicUrl", publicUrl));
     }
-
 }

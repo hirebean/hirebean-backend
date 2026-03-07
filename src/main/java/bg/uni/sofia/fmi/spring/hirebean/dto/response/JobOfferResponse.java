@@ -27,5 +27,4 @@ public class JobOfferResponse {
     private String companyLogoUrl;
 
     private Set<String> tags;
-
 }

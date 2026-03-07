@@ -36,5 +36,4 @@ public class CandidateProfile extends BaseEntity {
     private String linkedinUrl;
     private String githubUrl;
     private String jobTitle;
-
 }

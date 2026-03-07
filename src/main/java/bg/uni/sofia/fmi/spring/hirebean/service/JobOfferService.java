@@ -12,5 +12,4 @@ public interface JobOfferService {
     JobOfferResponse getOfferById(Long id);
 
     JobOfferResponse createOffer(JobOfferRequest request);
-
 }

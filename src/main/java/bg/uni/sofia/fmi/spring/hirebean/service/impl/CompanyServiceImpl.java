@@ -35,30 +35,32 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
-        return companyRepository.findAll()
-                .stream()
+        return companyRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public CompanyResponse getCompanyById(Long id) {
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Company not found with id: " + id));
+        Company company =
+                companyRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException("Company not found with id: " + id));
         return mapToResponse(company);
     }
 
     @Override
     @Transactional
     public CompanyResponse createCompany(CompanyRequest request) {
-        Company company = Company.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .websiteUrl(request.getWebsiteUrl())
-                .logoUrl(request.getLogoUrl())
-                .location(request.getLocation())
-                .build();
+        Company company =
+                Company.builder()
+                        .name(request.getName())
+                        .description(request.getDescription())
+                        .websiteUrl(request.getWebsiteUrl())
+                        .logoUrl(request.getLogoUrl())
+                        .location(request.getLocation())
+                        .build();
         return mapToResponse(companyRepository.save(company));
     }
-
 }

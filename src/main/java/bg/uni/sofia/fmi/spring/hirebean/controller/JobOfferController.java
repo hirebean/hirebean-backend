@@ -36,5 +36,4 @@ public class JobOfferController {
     public ResponseEntity<JobOfferResponse> createJob(@Valid @RequestBody JobOfferRequest request) {
         return ResponseEntity.ok(jobOfferService.createOffer(request));
     }
-
 }

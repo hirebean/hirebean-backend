@@ -59,5 +59,4 @@ public class JobOffer extends BaseEntity {
     @CollectionTable(name = "job_tags", joinColumns = @JoinColumn(name = "job_id"))
     @Column(name = "tag")
     private Set<String> tags = new HashSet<>();
-
 }

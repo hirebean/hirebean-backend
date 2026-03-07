@@ -50,5 +50,4 @@ public class Log {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime timestamp;
-
 }

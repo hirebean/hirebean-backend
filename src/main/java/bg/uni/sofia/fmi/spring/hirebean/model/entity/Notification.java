@@ -36,5 +36,4 @@ public class Notification extends BaseEntity {
     private boolean isRead = false;
 
     private String type;
-
 }

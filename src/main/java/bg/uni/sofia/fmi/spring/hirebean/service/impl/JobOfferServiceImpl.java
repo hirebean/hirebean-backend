@@ -32,10 +32,8 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .jobType(jobOffer.getJobType())
                 .status(jobOffer.getStatus())
                 .createdAt(jobOffer.getCreatedAt())
-                .companyId(jobOffer.getCompany()
-                        .getId())
-                .companyName(jobOffer.getCompany()
-                        .getName())
+                .companyId(jobOffer.getCompany().getId())
+                .companyName(jobOffer.getCompany().getName())
                 .companyLogoUrl(jobOffer.getDescription())
                 .tags(jobOffer.getTags())
                 .build();
@@ -44,36 +42,44 @@ public class JobOfferServiceImpl implements JobOfferService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobOfferResponse> getAllOffers(Pageable pageable) {
-        return jobOfferRepository.findAll(pageable)
-                .map(this::mapToResponse);
+        return jobOfferRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     @Override
     public JobOfferResponse getOfferById(Long id) {
-        JobOffer jobOffer = jobOfferRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job offer not found with id: " + id));
+        JobOffer jobOffer =
+                jobOfferRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException("Job offer not found with id: " + id));
         return mapToResponse(jobOffer);
     }
 
     @Override
     @Transactional
     public JobOfferResponse createOffer(JobOfferRequest request) {
-        Company company = companyRepository.findById(request.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Company not found with id: " + request.getCompanyId()));
+        Company company =
+                companyRepository
+                        .findById(request.getCompanyId())
+                        .orElseThrow(
+                                () ->
+                                        new RuntimeException(
+                                                "Company not found with id: "
+                                                        + request.getCompanyId()));
 
-        JobOffer jobOffer = JobOffer.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .location(request.getLocation())
-                .minSalary(request.getMinSalary())
-                .maxSalary(request.getMaxSalary())
-                .jobType(request.getJobType())
-                .status(request.getStatus())
-                .tags(request.getTags())
-                .company(company)
-                .build();
+        JobOffer jobOffer =
+                JobOffer.builder()
+                        .title(request.getTitle())
+                        .description(request.getDescription())
+                        .location(request.getLocation())
+                        .minSalary(request.getMinSalary())
+                        .maxSalary(request.getMaxSalary())
+                        .jobType(request.getJobType())
+                        .status(request.getStatus())
+                        .tags(request.getTags())
+                        .company(company)
+                        .build();
 
         return mapToResponse(jobOfferRepository.save(jobOffer));
     }
-
 }

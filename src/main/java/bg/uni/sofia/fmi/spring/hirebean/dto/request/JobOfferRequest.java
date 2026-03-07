@@ -19,8 +19,7 @@ public class JobOfferRequest {
 
     private String location;
 
-    @NotNull
-    private JobType jobType;
+    @NotNull private JobType jobType;
 
     private BigDecimal minSalary;
 
@@ -32,5 +31,4 @@ public class JobOfferRequest {
     private Long companyId;
 
     private Set<String> tags;
-
 }
