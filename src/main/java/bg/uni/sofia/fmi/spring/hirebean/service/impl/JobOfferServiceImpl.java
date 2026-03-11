@@ -34,7 +34,7 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .createdAt(jobOffer.getCreatedAt())
                 .companyId(jobOffer.getCompany().getId())
                 .companyName(jobOffer.getCompany().getName())
-                .companyLogoUrl(jobOffer.getDescription())
+                .companyLogoUrl(jobOffer.getCompany().getLogoUrl())
                 .tags(jobOffer.getTags())
                 .build();
     }
