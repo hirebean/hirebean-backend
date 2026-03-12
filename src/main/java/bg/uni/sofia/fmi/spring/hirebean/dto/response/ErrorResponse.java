@@ -9,10 +9,8 @@ public record ErrorResponse(
         String error,
         String message,
         String path,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-                LocalDateTime timestamp) {
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime timestamp) {
     public static ErrorResponse of(HttpStatus status, String message, String path) {
-        return new ErrorResponse(
-                status.value(), status.getReasonPhrase(), message, path, LocalDateTime.now());
+        return new ErrorResponse(status.value(), status.getReasonPhrase(), message, path, LocalDateTime.now());
     }
 }

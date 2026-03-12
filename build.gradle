@@ -47,8 +47,8 @@ dependencies {
 
 spotless {
     java {
-        googleJavaFormat().aosp() // AOSP style = 4-space indentation (Google default is 2)
-
+        //googleJavaFormat().aosp() // AOSP style = 4-space indentation (Google default is 2)
+        palantirJavaFormat()
         target 'src/*/java/**/*.java'
 
         removeUnusedImports()

@@ -2,6 +2,7 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobOfferRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobOfferResponse;
+import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
@@ -47,38 +48,31 @@ public class JobOfferServiceImpl implements JobOfferService {
 
     @Override
     public JobOfferResponse getOfferById(Long id) {
-        JobOffer jobOffer =
-                jobOfferRepository
-                        .findById(id)
-                        .orElseThrow(
-                                () -> new RuntimeException("Job offer not found with id: " + id));
+        JobOffer jobOffer = jobOfferRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job offer not found with id: " + id));
         return mapToResponse(jobOffer);
     }
 
     @Override
     @Transactional
     public JobOfferResponse createOffer(JobOfferRequest request) {
-        Company company =
-                companyRepository
-                        .findById(request.getCompanyId())
-                        .orElseThrow(
-                                () ->
-                                        new RuntimeException(
-                                                "Company not found with id: "
-                                                        + request.getCompanyId()));
+        Company company = companyRepository
+                .findById(request.getCompanyId())
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Company not found with id: " + request.getCompanyId()));
 
-        JobOffer jobOffer =
-                JobOffer.builder()
-                        .title(request.getTitle())
-                        .description(request.getDescription())
-                        .location(request.getLocation())
-                        .minSalary(request.getMinSalary())
-                        .maxSalary(request.getMaxSalary())
-                        .jobType(request.getJobType())
-                        .status(request.getStatus())
-                        .tags(request.getTags())
-                        .company(company)
-                        .build();
+        JobOffer jobOffer = JobOffer.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .location(request.getLocation())
+                .minSalary(request.getMinSalary())
+                .maxSalary(request.getMaxSalary())
+                .jobType(request.getJobType())
+                .status(request.getStatus())
+                .tags(request.getTags())
+                .company(company)
+                .build();
 
         return mapToResponse(jobOfferRepository.save(jobOffer));
     }

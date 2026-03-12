@@ -2,6 +2,8 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.CompanyRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
+import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyAlreadyExistsException;
+import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
@@ -35,32 +37,30 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
-        return companyRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return companyRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
     public CompanyResponse getCompanyById(Long id) {
-        Company company =
-                companyRepository
-                        .findById(id)
-                        .orElseThrow(
-                                () -> new RuntimeException("Company not found with id: " + id));
+        Company company = companyRepository
+                .findById(id)
+                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
         return mapToResponse(company);
     }
 
     @Override
     @Transactional
     public CompanyResponse createCompany(CompanyRequest request) {
-        Company company =
-                Company.builder()
-                        .name(request.getName())
-                        .description(request.getDescription())
-                        .websiteUrl(request.getWebsiteUrl())
-                        .logoUrl(request.getLogoUrl())
-                        .location(request.getLocation())
-                        .build();
+        if (companyRepository.findByName(request.getName()).isPresent()) {
+            throw new CompanyAlreadyExistsException("Company with name '" + request.getName() + "' already exists.");
+        }
+        Company company = Company.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .websiteUrl(request.getWebsiteUrl())
+                .logoUrl(request.getLogoUrl())
+                .location(request.getLocation())
+                .build();
         return mapToResponse(companyRepository.save(company));
     }
 }

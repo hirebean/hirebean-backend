@@ -36,8 +36,7 @@ public class S3Service {
 
         long size = file.getSize();
         if (size <= 0 || size > MAX_FILE_BYTES) {
-            throw new IllegalArgumentException(
-                    "File size is invalid or exceeds the maximum allowed size.");
+            throw new IllegalArgumentException("File size is invalid or exceeds the maximum allowed size.");
         }
 
         if (folder == null || folder.isBlank()) {
@@ -45,10 +44,9 @@ public class S3Service {
         }
 
         String originalFilename = file.getOriginalFilename();
-        String extension =
-                originalFilename != null && originalFilename.contains(".")
-                        ? originalFilename.substring(originalFilename.lastIndexOf('.'))
-                        : "";
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                : "";
 
         // preventing collision generating unique name!!!
         String key = folder + "/" + UUID.randomUUID() + extension;
@@ -80,11 +78,10 @@ public class S3Service {
         GetObjectRequest getObjectRequest =
                 GetObjectRequest.builder().bucket(bucketName).key(key).build();
 
-        GetObjectPresignRequest getObjectPresignRequest =
-                GetObjectPresignRequest.builder()
-                        .signatureDuration(Duration.ofMinutes(10))
-                        .getObjectRequest(getObjectRequest)
-                        .build();
+        GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(10))
+                .getObjectRequest(getObjectRequest)
+                .build();
 
         return s3Presigner.presignGetObject(getObjectPresignRequest).url().toString();
     }

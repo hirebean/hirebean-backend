@@ -6,7 +6,9 @@ import lombok.Data;
 @Data
 public class CompanyRequest {
 
-    @NotBlank private String name;
+    @NotBlank
+    private String name;
+
     private String description;
     private String websiteUrl;
     private String logoUrl;
