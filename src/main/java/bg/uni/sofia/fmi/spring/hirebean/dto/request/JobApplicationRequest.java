@@ -10,4 +10,5 @@ public class JobApplicationRequest {
     private Long jobOfferId;
 
     private String coverLetter;
+    private String cvUrl;
 }

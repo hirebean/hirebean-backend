@@ -30,6 +30,48 @@ spec:
                 secretKeyRef:
                   name: hirebean-db-secret
                   key: HIREBEAN_DB_PASS
+            - name: APP_FRONTEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hirebean-db-secret
+                  key: APP_FRONTEND_URL
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mail-secret
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-secret
+                  key: MAIL_PASSWORD
+
+            - name: CDN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hirebean-db-secret
+                  key: CDN_URL
+
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: hirebean-db-secret
+                  key: AWS_S3_BUCKET_NAME
+
+            - name: SPRING_CLOUD_AWS_REGION_STATIC
+              value: "eu-north-1"
+
+            - name: SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: AWS_ACCESS_KEY_ID
+
+            - name: SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: AWS_SECRET_ACCESS_KEY
 
           livenessProbe:
             httpGet:

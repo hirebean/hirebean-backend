@@ -38,7 +38,14 @@ jobs:
           # Create Secret for Postgres
           kubectl create secret generic hirebean-db-secret -n hirebean\
               --from-literal=HIREBEAN_DB_USERNAME=${{ secrets.HIREBEAN_DB_USERNAME }} \
-              --from-literal=HIREBEAN_DB_PASS=${{ secrets.HIREBEAN_DB_PASS }} 
+              --from-literal=HIREBEAN_DB_PASS=${{ secrets.HIREBEAN_DB_PASS }} \
+              --from-literal=SPRING_DATASOURCE_URL=${{ secrets.MAIL_USERNAME }} \
+              --from-literal=CDN_URL=${{ secrets.MAIL_PASSWORD }} \
+              --from-literal=AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }} \
+              --from-literal=AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+              --from-literal=AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+              --from-literal=CDN_URL=${{ secrets.CDN_URL }}
+              --from-literal=APP_FRONTEND_URL=${{ secrets.APP_FRONTEND_URL }}
           
           # Apply databses and backend from folders
           kubectl apply -f k8s/apps/database/ -n hirebean
