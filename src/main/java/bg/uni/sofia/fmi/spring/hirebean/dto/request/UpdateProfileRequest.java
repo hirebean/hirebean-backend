@@ -12,4 +12,5 @@ public class UpdateProfileRequest {
     private String linkedInUrl;
     private String githubUrl;
     private String jobTitle;
+    private String profilePicture;
 }

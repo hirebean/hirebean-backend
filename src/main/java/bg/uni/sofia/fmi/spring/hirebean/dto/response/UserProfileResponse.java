@@ -13,10 +13,13 @@ public class UserProfileResponse {
     private String lastName;
 
     // CandidateProfile fields
-    private String profilePictureUrl;
     private String bio;
     private String linkedinUrl;
     private String githubUrl;
     private String jobTitle;
+    // CV - private, presigned url (valid for 10 min example)
     private String resumeUrl; // presigned S3 URL
+
+    // Profile picture - pulic, served via CDN
+    private String profilePictureUrl;
 }

@@ -14,15 +14,14 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -36,27 +35,35 @@ public class UserServiceImpl implements UserService {
 
     private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
-            .id(user.getId())
-            .email(user.getEmail())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .build();
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .build();
     }
 
     private UserProfileResponse mapToProfileResponse(User user) {
         CandidateProfile profile = user.getCandidateProfile();
         return UserProfileResponse.builder()
-            .id(user.getId())
-            .email(user.getEmail())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .bio(profile != null ? profile.getBio() : null)
-            .linkedinUrl(profile != null ? profile.getLinkedinUrl() : null)
-            .githubUrl(profile != null ? profile.getGithubUrl() : null)
-            .jobTitle(profile != null ? profile.getJobTitle() : null)
-            .resumeUrl(
-                profile != null ? s3Service.getPresignedUrl(profile.getResumeUrl()) : null
-            ).build();
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .bio(profile != null ? profile.getBio() : null)
+                .linkedinUrl(profile != null ? profile.getLinkedinUrl() : null)
+                .githubUrl(profile != null ? profile.getGithubUrl() : null)
+                .jobTitle(profile != null ? profile.getJobTitle() : null)
+                .resumeUrl(profile != null ? s3Service.getPresignedUrl(profile.getResumeUrl()) : null)
+                .profilePictureUrl(profile != null ? s3Service.getPublicUrl(profile.getProfilePictureUrl()) : null)
+                .build();
+    }
+
+    private CandidateProfile getOrCreateProfile(User user) {
+        if (user.getCandidateProfile() == null) {
+            CandidateProfile profile = CandidateProfile.builder().user(user).build();
+            user.setCandidateProfile(profile);
+        }
+        return user.getCandidateProfile();
     }
 
     @Override
@@ -68,8 +75,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserById(Long id) {
         User user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
 
         return mapToResponse(user);
     }
@@ -77,24 +84,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserByEmail(String email) {
         User user = userRepository
-            .findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
+                .findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
         return mapToResponse(user);
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(Long userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
         return mapToProfileResponse(user);
     }
 
     @Override
     @Transactional
     public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
         }
@@ -102,7 +111,8 @@ public class UserServiceImpl implements UserService {
             user.setLastName(request.getLastName());
         }
 
-        CandidateProfile profile = user.getCandidateProfile();
+        CandidateProfile profile = getOrCreateProfile(user);
+
         if (profile == null) {
             profile = new CandidateProfile();
             profile.setUser(user);
@@ -127,20 +137,37 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
+    public UserProfileResponse uploadProfilePicture(Long userId, MultipartFile picture) {
 
-        //Delete old tokens for this user
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
+        // Upload to S3 under "profile-pictures/" folder - pulic via CDN
+        String key = s3Service.uploadFile(picture, "profile-pictures");
+        CandidateProfile profile = getOrCreateProfile(user);
+        profile.setProfilePictureUrl(key);
+
+        userRepository.save(user);
+        return mapToProfileResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void requestPasswordReset(String email) {
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
+
+        // Delete old tokens for this user
         passwordResetTokenRepository.deleteAllByUserId(user.getId());
 
         String token = UUID.randomUUID().toString();
         PasswordResetToken resetToken = PasswordResetToken.builder()
-            .token(token)
-            .user(user)
-            .expiresAt(LocalDateTime.now().plusMinutes(30))
-            .used(false)
-            .build();
+                .token(token)
+                .user(user)
+                .expiresAt(LocalDateTime.now().plusMinutes(30))
+                .used(false)
+                .build();
 
         passwordResetTokenRepository.save(resetToken);
         emailService.sendPasswordResetEmail(user.getEmail(), token);
@@ -153,8 +180,9 @@ public class UserServiceImpl implements UserService {
             throw new UnauthorizedException("New password and confirm password do not match");
         }
 
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-            .orElseThrow(() -> new UnauthorizedException("Invalid or expired password reset token"));
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByToken(token)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired password reset token"));
 
         if (resetToken.isUsed() || resetToken.isExpired()) {
             throw new UnauthorizedException("Invalid or expired password reset token");
@@ -172,8 +200,8 @@ public class UserServiceImpl implements UserService {
     public void deleteUserById(Long id) {
 
         User user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         userRepository.delete(user);
     }
 }

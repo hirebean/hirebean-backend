@@ -5,11 +5,12 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.request.UpdateProfileRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserProfileResponse;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserResponse;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
-
-import java.util.List;
-
 import jakarta.validation.Valid;
+import java.net.URI;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,9 @@ public class UserController {
 
     private final UserService userService;
 
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
+
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
@@ -45,26 +49,30 @@ public class UserController {
 
     @PatchMapping("/{id}/profile")
     public ResponseEntity<UserProfileResponse> updateUserProfile(
-        @PathVariable Long id,
-        @Valid @RequestBody UpdateProfileRequest request
-    ) {
+            @PathVariable Long id, @Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(userService.updateProfile(id, request));
     }
 
-    //1 Request password reset email
+    // Step 1: user submits their email → backend sends reset email
     @PostMapping("/password/reset-request")
-    public ResponseEntity<Void> requestPasswordReset(
-        @RequestParam String email
-    ) {
+    public ResponseEntity<Void> requestPasswordReset(@RequestParam String email) {
         userService.requestPasswordReset(email);
         return ResponseEntity.ok().build();
     }
-    //2 Confirm with token and set new password
+
+    // Step 2 user clicks on the email link -> backend validates token and
+    // redirects to frontend reset-password page with token
+    // frontend shows the enter new password form
+    @GetMapping("/password/reset-confirm")
+    public ResponseEntity<Void> confirmResetToken(@RequestParam String token) {
+        URI redirectUri = URI.create(frontendUrl + "/reset-password?token=" + token);
+        return ResponseEntity.status(HttpStatus.FOUND).location(redirectUri).build();
+    }
+
+    // Step 3: frontend submits new password + token → backend changes password
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(
-        @RequestParam String token,
-        @Valid @RequestBody ChangePasswordRequest request
-        ) {
+            @RequestParam String token, @Valid @RequestBody ChangePasswordRequest request) {
         userService.resetPassword(token, request);
         return ResponseEntity.ok().build();
     }

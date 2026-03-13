@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,12 +14,13 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
+    @Value("${app.backend-url}")
+    private String backendUrl;
 
     @Override
+    @Async
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
-        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+        String resetLink = backendUrl + "/api/users/password/reset-confirm?token=" + resetToken;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
