@@ -5,8 +5,11 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobApplicationResponse;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.ApplicationStatus;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobApplicationService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -15,7 +18,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -23,10 +28,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class JobApplicationController {
     private final JobApplicationService jobApplicationService;
 
-    @PostMapping("/apply/{candidateId}")
+    //multipart/form-data
+    @PostMapping(value = "/apply/{candidateId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JobApplicationResponse> apply(
-            @PathVariable Long candidateId, @Valid @RequestBody JobApplicationRequest request) {
-        return ResponseEntity.ok(jobApplicationService.apply(candidateId, request));
+        @PathVariable Long candidateId,
+        @Valid @RequestPart("data") JobApplicationRequest request,
+        @RequestPart(value = "cv", required = true) MultipartFile cvFile
+
+    ) {
+        return ResponseEntity.ok(jobApplicationService.apply(candidateId, request, cvFile));
     }
 
     @GetMapping("/candidate/{candidateId}")
@@ -41,7 +51,7 @@ public class JobApplicationController {
 
     @PatchMapping("/{applicationId}/status")
     public ResponseEntity<JobApplicationResponse> updateStatus(
-            @PathVariable Long applicationId, @RequestParam ApplicationStatus status) {
+        @PathVariable Long applicationId, @RequestParam ApplicationStatus status) {
         return ResponseEntity.ok(jobApplicationService.updateStatus(applicationId, status));
     }
 }
