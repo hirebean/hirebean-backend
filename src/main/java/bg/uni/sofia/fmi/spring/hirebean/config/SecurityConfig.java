@@ -68,6 +68,7 @@ public class SecurityConfig {
         return provider;
     }
     // AuthenticationManager се инжектира в AuthServiceImpl за login
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
