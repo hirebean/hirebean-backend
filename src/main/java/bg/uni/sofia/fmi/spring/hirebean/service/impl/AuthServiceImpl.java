@@ -12,7 +12,6 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.security.JwtUtil;
 import bg.uni.sofia.fmi.spring.hirebean.security.UserDetailsServiceImpl;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuthService;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -25,7 +24,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -41,15 +39,16 @@ public class AuthServiceImpl implements AuthService {
     // Priority: ADMIN > EMPLOYER > CANDIDATE
     // Used to return the highest-privilege role in the auth response
     // so the frontend knows what UI to render.
-    private  static final List<RoleType> ROLE_PRIORITY = List.of(RoleType.ADMIN, RoleType.EMPLOYER, RoleType.CANDIDATE);
+    private static final List<RoleType> ROLE_PRIORITY = List.of(RoleType.ADMIN, RoleType.EMPLOYER, RoleType.CANDIDATE);
 
     private String resolvePrimaryRole(Set<Role> roles) {
         return roles.stream()
-            .map(role -> role.getName())
-            .min(Comparator.comparingInt(ROLE_PRIORITY::indexOf))
-            .orElse(RoleType.CANDIDATE) // Default to CANDIDATE if no roles found, though this should not happen
-            .name();
+                .map(role -> role.getName())
+                .min(Comparator.comparingInt(ROLE_PRIORITY::indexOf))
+                .orElse(RoleType.CANDIDATE) // Default to CANDIDATE if no roles found, though this should not happen
+                .name();
     }
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
