@@ -60,3 +60,6 @@ cdn:
 app:
   backend-url: ${APP_BACKEND_URL:http://localhost:8080}
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: 3600000 # 1 hour in milliseconds
