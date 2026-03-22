@@ -12,6 +12,9 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.security.JwtUtil;
 import bg.uni.sofia.fmi.spring.hirebean.security.UserDetailsServiceImpl;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuthService;
+
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,18 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final UserDetailsServiceImpl userDetailsService;
 
+    // Priority: ADMIN > EMPLOYER > CANDIDATE
+    // Used to return the highest-privilege role in the auth response
+    // so the frontend knows what UI to render.
+    private  static final List<RoleType> ROLE_PRIORITY = List.of(RoleType.ADMIN, RoleType.EMPLOYER, RoleType.CANDIDATE);
+
+    private String resolvePrimaryRole(Set<Role> roles) {
+        return roles.stream()
+            .map(role -> role.getName())
+            .min(Comparator.comparingInt(ROLE_PRIORITY::indexOf))
+            .orElse(RoleType.CANDIDATE) // Default to CANDIDATE if no roles found, though this should not happen
+            .name();
+    }
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -87,10 +103,8 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(userDetails);
 
-        String primaryRole = user.getRoles().stream()
-                .map(role -> role.getName().name())
-                .findFirst()
-                .orElse(RoleType.CANDIDATE.name()); // Вземаме първата роля или CANDIDATE по подразбиране
+        String primaryRole = resolvePrimaryRole(user.getRoles());
+
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
