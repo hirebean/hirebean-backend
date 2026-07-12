@@ -28,6 +28,7 @@ public class JobApplicationController {
 
     // multipart/form-data
     @PostMapping(value = "/apply/{candidateId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("@ownership.canApplyAsCandidate(authentication, #candidateId)")
     public ResponseEntity<JobApplicationResponse> apply(
             @PathVariable Long candidateId,
             @Valid @RequestPart("data") JobApplicationRequest request,
@@ -37,17 +38,19 @@ public class JobApplicationController {
     }
 
     @GetMapping("/candidate/{candidateId}")
+    @PreAuthorize("@ownership.canViewCandidateApplications(authentication, #candidateId)")
     public ResponseEntity<List<JobApplicationResponse>> getApplicationsByCandidateId(@PathVariable Long candidateId) {
         return ResponseEntity.ok(jobApplicationService.getApplicationsForCandidate(candidateId));
     }
 
     @GetMapping("/job/{jobOfferId}")
+    @PreAuthorize("@ownership.canViewJobApplications(authentication, #jobOfferId)")
     public ResponseEntity<List<JobApplicationResponse>> getByJobOffer(@PathVariable Long jobOfferId) {
         return ResponseEntity.ok(jobApplicationService.getApplicationsForJobOffer(jobOfferId));
     }
 
     @PatchMapping("/{applicationId}/status")
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canManageApplication(authentication, #applicationId)")
     public ResponseEntity<JobApplicationResponse> updateStatus(
             @PathVariable Long applicationId, @RequestParam ApplicationStatus status) {
         return ResponseEntity.ok(jobApplicationService.updateStatus(applicationId, status));

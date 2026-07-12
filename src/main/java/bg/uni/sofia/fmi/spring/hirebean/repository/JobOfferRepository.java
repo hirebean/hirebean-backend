@@ -4,10 +4,11 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface JobOfferRepository extends JpaRepository<JobOffer, Long> {
+public interface JobOfferRepository extends JpaRepository<JobOffer, Long>, JpaSpecificationExecutor<JobOffer> {
 
     Page<JobOffer> findAllByCompanyId(Long companyId, Pageable pageable);
 

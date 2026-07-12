@@ -12,7 +12,10 @@ import bg.uni.sofia.fmi.spring.hirebean.model.enums.JobStatus;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobApplicationRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
+import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
+import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobApplicationService;
+import bg.uni.sofia.fmi.spring.hirebean.service.NotificationService;
 import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final JobOfferRepository jobOfferRepository;
 
     private final S3Service s3Service;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
+    private final AuditLogService auditLogService;
 
     private JobApplicationResponse mapToResponse(JobApplication application) {
         return JobApplicationResponse.builder()
@@ -81,7 +87,18 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .status(ApplicationStatus.PENDING)
                 .build();
 
-        return mapToResponse(jobApplicationRepository.save(application));
+        JobApplication saved = jobApplicationRepository.save(application);
+
+        userRepository
+                .findAllByCompanyId(jobOffer.getCompany().getId())
+                .forEach(employee -> notificationService.createNotification(
+                        employee.getId(),
+                        "New application for " + jobOffer.getTitle() + " from " + candidate.getEmail(),
+                        "APPLICATION_CREATED"));
+
+        auditLogService.record(
+                "APPLY", "JobApplication", saved.getId(), candidateId, "Candidate applied for job", "INFO");
+        return mapToResponse(saved);
     }
 
     @Override
@@ -109,6 +126,17 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                         () -> new ResourceNotFoundException("Job application not found with id: " + applicationId));
         jobApplication.setStatus(status);
         jobApplicationRepository.save(jobApplication);
+
+        notificationService.createNotification(
+                jobApplication.getCandidate().getId(),
+                "Your application for " + jobApplication.getJobOffer().getTitle() + " is now " + status,
+                "APPLICATION_STATUS_UPDATED");
+        emailService.sendApplicationStatusEmail(
+                jobApplication.getCandidate().getEmail(),
+                jobApplication.getJobOffer().getTitle(),
+                status);
+        auditLogService.record(
+                "STATUS_UPDATE", "JobApplication", applicationId, "Updated application status to " + status, "INFO");
 
         return mapToResponse(jobApplication);
     }
