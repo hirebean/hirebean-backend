@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +47,7 @@ public class JobApplicationController {
     }
 
     @PatchMapping("/{applicationId}/status")
+    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
     public ResponseEntity<JobApplicationResponse> updateStatus(
             @PathVariable Long applicationId, @RequestParam ApplicationStatus status) {
         return ResponseEntity.ok(jobApplicationService.updateStatus(applicationId, status));

@@ -2,15 +2,18 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.CompanyRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
+import bg.uni.sofia.fmi.spring.hirebean.exception.BusinessException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyAlreadyExistsException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
+import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
 import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final S3Service s3Service;
 
     private final CompanyRepository companyRepository;
+    private final AuditLogService auditLogService;
 
     private CompanyResponse mapToResponse(Company company) {
         return CompanyResponse.builder()
@@ -61,6 +65,43 @@ public class CompanyServiceImpl implements CompanyService {
                 .logoUrl(request.getLogoUrl())
                 .location(request.getLocation())
                 .build();
-        return mapToResponse(companyRepository.save(company));
+        Company saved = companyRepository.save(company);
+        auditLogService.record("CREATE", "Company", saved.getId(), "Created company", "INFO");
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public CompanyResponse updateCompany(Long id, CompanyRequest request) {
+        Company company = companyRepository
+                .findById(id)
+                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
+
+        companyRepository.findByName(request.getName()).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new BusinessException(
+                        "Company with name '" + request.getName() + "' already exists.", HttpStatus.CONFLICT);
+            }
+        });
+
+        company.setName(request.getName());
+        company.setDescription(request.getDescription());
+        company.setWebsiteUrl(request.getWebsiteUrl());
+        company.setLogoUrl(request.getLogoUrl());
+        company.setLocation(request.getLocation());
+
+        Company saved = companyRepository.save(company);
+        auditLogService.record("UPDATE", "Company", saved.getId(), "Updated company", "INFO");
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCompany(Long id) {
+        Company company = companyRepository
+                .findById(id)
+                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
+        companyRepository.delete(company);
+        auditLogService.record("DELETE", "Company", id, "Deleted company", "WARN");
     }
 }
