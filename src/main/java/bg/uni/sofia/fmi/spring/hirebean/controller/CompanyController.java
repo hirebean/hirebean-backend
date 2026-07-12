@@ -38,20 +38,20 @@ public class CompanyController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canCreateCompany(authentication)")
     public ResponseEntity<CompanyResponse> createCompany(@Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(companyService.createCompany(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canManageCompany(authentication, #id)")
     public ResponseEntity<CompanyResponse> updateCompany(
             @PathVariable Long id, @Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.ok(companyService.updateCompany(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canManageCompany(authentication, #id)")
     public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
         companyService.deleteCompany(id);
         return ResponseEntity.noContent().build();

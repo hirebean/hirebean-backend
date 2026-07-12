@@ -6,14 +6,20 @@ import bg.uni.sofia.fmi.spring.hirebean.exception.BusinessException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyAlreadyExistsException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
+import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
+import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
 import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +30,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final S3Service s3Service;
 
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
     private final AuditLogService auditLogService;
 
     private CompanyResponse mapToResponse(Company company) {
@@ -66,6 +73,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .location(request.getLocation())
                 .build();
         Company saved = companyRepository.save(company);
+        assignCompanyToCurrentEmployer(saved);
         auditLogService.record("CREATE", "Company", saved.getId(), "Created company", "INFO");
         return mapToResponse(saved);
     }
@@ -103,5 +111,32 @@ public class CompanyServiceImpl implements CompanyService {
                 .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
         companyRepository.delete(company);
         auditLogService.record("DELETE", "Company", id, "Deleted company", "WARN");
+    }
+
+    private void assignCompanyToCurrentEmployer(Company company) {
+        currentUser().ifPresent(user -> {
+            if (user.getCompany() == null && hasRole(user, RoleType.EMPLOYER)) {
+                user.setCompany(company);
+                userRepository.save(user);
+            }
+        });
+    }
+
+    private boolean hasRole(User user, RoleType roleType) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == roleType);
+    }
+
+    private Optional<User> currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Optional.empty();
+        }
+
+        String email = authentication.getName();
+        if (email == null || email.isBlank() || "anonymousUser".equals(email)) {
+            return Optional.empty();
+        }
+
+        return userRepository.findByEmail(email);
     }
 }
