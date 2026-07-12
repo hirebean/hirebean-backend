@@ -8,14 +8,18 @@ import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.auth.UnauthorizedException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.CandidateProfile;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.PasswordResetToken;
+import bg.uni.sofia.fmi.spring.hirebean.model.entity.Role;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.repository.PasswordResetTokenRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
+import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +36,14 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
     private final S3Service s3Service;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
+
+    private String resolvePrimaryRole(Set<Role> roles) {
+        return roles.stream()
+                .map(role -> role.getName().name())
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+    }
 
     private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
@@ -39,6 +51,8 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .role(resolvePrimaryRole(user.getRoles()))
+                .companyId(user.getCompany() != null ? user.getCompany().getId() : null)
                 .build();
     }
 
@@ -148,6 +162,24 @@ public class UserServiceImpl implements UserService {
         profile.setProfilePictureUrl(key);
 
         userRepository.save(user);
+        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded profile picture", "INFO");
+        return mapToProfileResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse uploadResume(Long userId, MultipartFile resume) {
+
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
+
+        String key = s3Service.uploadFile(resume, "resumes");
+        CandidateProfile profile = getOrCreateProfile(user);
+        profile.setResumeUrl(key);
+
+        userRepository.save(user);
+        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded resume", "INFO");
         return mapToProfileResponse(user);
     }
 
@@ -171,6 +203,8 @@ public class UserServiceImpl implements UserService {
 
         passwordResetTokenRepository.save(resetToken);
         emailService.sendPasswordResetEmail(user.getEmail(), token);
+        auditLogService.record(
+                "PASSWORD_RESET_REQUEST", "User", user.getId(), user.getId(), "Password reset requested", "INFO");
     }
 
     @Override
@@ -194,6 +228,8 @@ public class UserServiceImpl implements UserService {
 
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+        auditLogService.record(
+                "PASSWORD_RESET", "User", user.getId(), user.getId(), "Password reset completed", "INFO");
     }
 
     @Override
@@ -203,5 +239,6 @@ public class UserServiceImpl implements UserService {
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         userRepository.delete(user);
+        auditLogService.record("DELETE", "User", id, "Deleted user", "WARN");
     }
 }

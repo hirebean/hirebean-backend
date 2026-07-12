@@ -1,5 +1,6 @@
 package bg.uni.sofia.fmi.spring.hirebean.dto.request;
 
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,4 +22,8 @@ public class RegisterRequest {
 
     @NotBlank(message = "Last name is required")
     private String lastName;
+
+    private RoleType role = RoleType.CANDIDATE;
+
+    private Long companyId;
 }

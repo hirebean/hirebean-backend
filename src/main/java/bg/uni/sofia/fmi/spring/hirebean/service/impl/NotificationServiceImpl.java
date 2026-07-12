@@ -3,7 +3,9 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.NotificationResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Notification;
+import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.repository.NotificationRepository;
+import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.NotificationService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     private NotificationResponse mapToResponse(Notification notification) {
         return NotificationResponse.builder()
@@ -22,6 +25,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .recipientId(notification.getRecipient().getId())
                 .message(notification.getMessage())
                 .read(notification.isRead())
+                .type(notification.getType())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }
@@ -32,6 +36,22 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.findAllByRecipientId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public NotificationResponse createNotification(Long recipientId, String message, String type) {
+        User recipient = userRepository
+                .findById(recipientId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + recipientId));
+
+        Notification notification = Notification.builder()
+                .recipient(recipient)
+                .message(message)
+                .type(type)
+                .build();
+
+        return mapToResponse(notificationRepository.save(notification));
     }
 
     @Override

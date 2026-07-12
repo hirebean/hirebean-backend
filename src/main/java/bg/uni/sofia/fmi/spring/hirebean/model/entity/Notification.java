@@ -33,6 +33,7 @@ public class Notification extends BaseEntity {
     private String message;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isRead = false;
 
     private String type;

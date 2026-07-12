@@ -21,6 +21,8 @@ public interface UserService {
 
     UserProfileResponse uploadProfilePicture(Long userId, MultipartFile picture);
 
+    UserProfileResponse uploadResume(Long userId, MultipartFile resume);
+
     // 1. sends reset email with token, token is valid for 30 minutes
     void requestPasswordReset(String email);
 

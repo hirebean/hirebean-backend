@@ -39,19 +39,19 @@ public class PostController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canCreatePost(authentication, #request)")
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPost(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canUpdatePost(authentication, #id, #request)")
     public ResponseEntity<PostResponse> updatePost(@PathVariable Long id, @Valid @RequestBody PostRequest request) {
         return ResponseEntity.ok(postService.updatePost(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("@ownership.canManagePost(authentication, #id)")
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.deletePost(id);
         return ResponseEntity.noContent().build();

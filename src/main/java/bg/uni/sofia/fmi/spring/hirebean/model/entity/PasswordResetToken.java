@@ -33,6 +33,7 @@ public class PasswordResetToken extends BaseEntity {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean used = false;
 
     public boolean isExpired() {
