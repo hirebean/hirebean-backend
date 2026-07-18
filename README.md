@@ -23,6 +23,32 @@ Swagger UI:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+## Local demo data
+
+> Local/demo only. Never enable this seed in a shared, staging, or production environment.
+
+Demo data is disabled by default. Enable it for a local run with:
+
+```powershell
+$env:APP_SEED_DEMO_DATA='true'
+.\gradlew.bat bootRun
+```
+
+The seed is idempotent and preserves existing database records. It adds the `BluePeak Technologies` company, sample
+jobs, posts, an application, bookmarks, notifications, and these demo accounts:
+
+| Role      | Email                    | Password       |
+|-----------|--------------------------|----------------|
+| Admin     | `admin@hirebean.dev`     | `Admin123!`    |
+| Employer  | `employer@hirebean.dev`  | `Employer123!` |
+| Candidate | `candidate@hirebean.dev` | `Candidate123!` |
+
+Disable the seed again with:
+
+```powershell
+Remove-Item Env:APP_SEED_DEMO_DATA
+```
+
 ## API groups
 
 - Auth: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`
