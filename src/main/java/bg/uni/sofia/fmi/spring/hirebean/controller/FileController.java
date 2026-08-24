@@ -1,6 +1,6 @@
 package bg.uni.sofia.fmi.spring.hirebean.controller;
 
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,13 +15,13 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class FileController {
 
-    private final S3Service s3Service;
+    private final StorageService storageService;
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(
             @RequestParam("file") MultipartFile file, @RequestParam("folder") String folder) {
-        String key = s3Service.uploadFile(file, folder);
-        String publicUrl = s3Service.getPublicUrl(key);
+        String key = storageService.uploadFile(file, folder);
+        String publicUrl = storageService.getPublicUrl(key);
         return ResponseEntity.ok(Map.of("key", key, "publicUrl", publicUrl));
     }
 }

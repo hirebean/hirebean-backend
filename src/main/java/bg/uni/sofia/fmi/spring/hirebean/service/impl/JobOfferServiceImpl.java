@@ -10,7 +10,7 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobOfferService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import jakarta.persistence.criteria.Join;
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -29,7 +29,7 @@ public class JobOfferServiceImpl implements JobOfferService {
 
     private final JobOfferRepository jobOfferRepository;
     private final CompanyRepository companyRepository;
-    private final S3Service s3Service;
+    private final StorageService storageService;
     private final AuditLogService auditLogService;
 
     private JobOfferResponse mapToResponse(JobOffer jobOffer) {
@@ -46,7 +46,8 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .createdAt(jobOffer.getCreatedAt())
                 .companyId(jobOffer.getCompany().getId())
                 .companyName(jobOffer.getCompany().getName())
-                .companyLogoUrl(s3Service.getPublicUrl(jobOffer.getCompany().getLogoUrl()))
+                .companyLogoUrl(
+                        storageService.getPublicUrl(jobOffer.getCompany().getLogoUrl()))
                 .tags(jobOffer.getTags())
                 .build();
     }

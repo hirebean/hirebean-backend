@@ -42,6 +42,6 @@ public class JobApplication extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ApplicationStatus status;
 
-    // S3 key for the uploaded CV file
+    // Storage object key for the uploaded CV file
     private String cvKey;
 }

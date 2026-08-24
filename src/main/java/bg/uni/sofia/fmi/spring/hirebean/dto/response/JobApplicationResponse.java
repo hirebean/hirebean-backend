@@ -15,7 +15,7 @@ public class JobApplicationResponse {
     private Long jobOfferId;
     private String jobTitle;
     private String coverLetter;
-    private String cvUrl; // presigned S3 URL
+    private String cvUrl; // time-limited Supabase Storage URL
     private ApplicationStatus status;
 
     private LocalDateTime createdAt;

@@ -11,7 +11,7 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.PostRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.PostService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +25,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
-    private final S3Service s3Service;
+    private final StorageService storageService;
     private final AuditLogService auditLogService;
 
     private PostResponse mapToResponse(Post post) {
@@ -34,7 +34,7 @@ public class PostServiceImpl implements PostService {
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .imageUrl(s3Service.getPublicUrl(post.getImageUrl()))
+                .imageUrl(storageService.getPublicUrl(post.getImageUrl()))
                 .companyId(post.getCompany().getId())
                 .companyName(post.getCompany().getName())
                 .authorId(author != null ? author.getId() : null)

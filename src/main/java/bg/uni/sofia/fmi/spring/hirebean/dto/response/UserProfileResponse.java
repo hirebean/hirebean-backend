@@ -18,7 +18,7 @@ public class UserProfileResponse {
     private String githubUrl;
     private String jobTitle;
     // CV - private, presigned url (valid for 10 min example)
-    private String resumeUrl; // presigned S3 URL
+    private String resumeUrl; // time-limited Supabase Storage URL
 
     // Profile picture - pulic, served via CDN
     private String profilePictureUrl;

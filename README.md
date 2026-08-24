@@ -1,4 +1,4 @@
-# HireBean-Backend, Spring Backend & React & Typescript app + Devops 
+# HireBean-Backend, Spring Backend & React & Typescript app + Devops
 
 # HireBean-Frontend is here -> https://github.com/darimachine/HireBean-Frontend
 ## Форматиране
@@ -48,6 +48,30 @@ Disable the seed again with:
 ```powershell
 Remove-Item Env:APP_SEED_DEMO_DATA
 ```
+
+## Supabase Storage setup
+
+The backend uses Supabase Storage instead of AWS S3. It uses the Supabase Storage REST API, so the backend keeps
+object keys in PostgreSQL while images are public and CV files remain private behind short-lived signed URLs.
+
+1. Create a free Supabase project at `https://supabase.com`.
+2. Open Storage and create two file buckets:
+   - `hirebean-public` and mark it **Public** for profile pictures, company logos, and post images.
+   - `hirebean-private` and leave it **Private** for resumes and application CVs.
+3. Open Project Settings -> API and copy the project URL and the server-only `service_role` key.
+4. Put these values in the local, gitignored `.env` file:
+
+```dotenv
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SECRET_KEY=<server-only-secret-key>
+SUPABASE_PUBLIC_BUCKET=hirebean-public
+SUPABASE_PRIVATE_BUCKET=hirebean-private
+SUPABASE_SIGNED_URL_SECONDS=600
+```
+
+Never expose `SUPABASE_SECRET_KEY` in the frontend or commit it. The backend maps folders as follows:
+`profile-pictures`, `company-logos`, and `post-images` go to the public bucket; `resumes` and `cvs` go to the private
+bucket. Existing database values remain object keys, so no PostgreSQL migration is required for this storage switch.
 
 ## API groups
 

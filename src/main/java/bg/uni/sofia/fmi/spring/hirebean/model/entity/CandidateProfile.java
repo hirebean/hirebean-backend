@@ -28,10 +28,10 @@ public class CandidateProfile extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // S3 key - accessed key via presigned URL (private URL with expiration)
+    // Storage object key - served through a time-limited private URL
     private String resumeUrl; // link to file
 
-    // S3 key - accessed via CDN ( public URL)
+    // Storage object key - served through a public URL
     private String profilePictureUrl; // link to file
 
     @Column(columnDefinition = "TEXT")

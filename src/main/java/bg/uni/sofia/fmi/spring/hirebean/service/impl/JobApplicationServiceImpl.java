@@ -16,7 +16,7 @@ import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobApplicationService;
 import bg.uni.sofia.fmi.spring.hirebean.service.NotificationService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     private final JobOfferRepository jobOfferRepository;
 
-    private final S3Service s3Service;
+    private final StorageService storageService;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final AuditLogService auditLogService;
@@ -46,7 +46,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .jobOfferId(application.getJobOffer().getId())
                 .jobTitle(application.getJobOffer().getTitle())
                 .coverLetter(application.getCoverLetter())
-                .cvUrl(s3Service.getPresignedUrl(application.getCvKey()))
+                .cvUrl(storageService.getPresignedUrl(application.getCvKey()))
                 .status(application.getStatus())
                 .createdAt(application.getCreatedAt())
                 .build();
@@ -73,10 +73,10 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + candidateId));
 
-        // Upload CV to S3 under "cvs/" folder
+        // Upload CV to private Supabase Storage under the "cvs/" folder
         String cvKey = null;
         if (cvFile != null && !cvFile.isEmpty()) {
-            cvKey = s3Service.uploadFile(cvFile, "cvs");
+            cvKey = storageService.uploadFile(cvFile, "cvs");
         }
 
         JobApplication application = JobApplication.builder()

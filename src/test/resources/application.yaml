@@ -4,17 +4,6 @@ spring:
     driverClassName: org.h2.Driver
     username: sa
     password: ""
-
-  cloud:
-    aws:
-      region:
-        static: eu-central-1
-      credentials:
-        access-key: test-key
-        secret-key: test-secret
-      s3:
-        bucket: test-bucket
-
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
@@ -36,8 +25,12 @@ spring:
           starttls:
             enable: true
 
-cdn:
-  url: http://localhost-cdn
+storage:
+  supabase-url: http://localhost:54321
+  service-key: test-service-key
+  public-bucket: hirebean-public
+  private-bucket: hirebean-private
+  signed-url-seconds: 600
 
 app:
   backend-url: http://localhost:8080

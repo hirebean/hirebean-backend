@@ -12,7 +12,7 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyServiceImpl implements CompanyService {
 
-    private final S3Service s3Service;
+    private final StorageService storageService;
 
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
@@ -39,7 +39,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .name(company.getName())
                 .description(company.getDescription())
                 .websiteUrl(company.getWebsiteUrl())
-                .logoUrl(s3Service.getPublicUrl(company.getLogoUrl()))
+                .logoUrl(storageService.getPublicUrl(company.getLogoUrl()))
                 .location(company.getLocation())
                 .createdAt(company.getCreatedAt())
                 .build();

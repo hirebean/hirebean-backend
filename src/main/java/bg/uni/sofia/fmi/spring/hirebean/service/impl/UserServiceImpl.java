@@ -14,7 +14,7 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.PasswordResetTokenRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
-    private final S3Service s3Service;
+    private final StorageService storageService;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
 
@@ -67,8 +67,8 @@ public class UserServiceImpl implements UserService {
                 .linkedinUrl(profile != null ? profile.getLinkedinUrl() : null)
                 .githubUrl(profile != null ? profile.getGithubUrl() : null)
                 .jobTitle(profile != null ? profile.getJobTitle() : null)
-                .resumeUrl(profile != null ? s3Service.getPresignedUrl(profile.getResumeUrl()) : null)
-                .profilePictureUrl(profile != null ? s3Service.getPublicUrl(profile.getProfilePictureUrl()) : null)
+                .resumeUrl(profile != null ? storageService.getPresignedUrl(profile.getResumeUrl()) : null)
+                .profilePictureUrl(profile != null ? storageService.getPublicUrl(profile.getProfilePictureUrl()) : null)
                 .build();
     }
 
@@ -156,8 +156,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
-        // Upload to S3 under "profile-pictures/" folder - pulic via CDN
-        String key = s3Service.uploadFile(picture, "profile-pictures");
+        // Upload to public Supabase Storage under the "profile-pictures/" folder
+        String key = storageService.uploadFile(picture, "profile-pictures");
         CandidateProfile profile = getOrCreateProfile(user);
         profile.setProfilePictureUrl(key);
 
@@ -174,7 +174,7 @@ public class UserServiceImpl implements UserService {
                 .findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found"));
 
-        String key = s3Service.uploadFile(resume, "resumes");
+        String key = storageService.uploadFile(resume, "resumes");
         CandidateProfile profile = getOrCreateProfile(user);
         profile.setResumeUrl(key);
 

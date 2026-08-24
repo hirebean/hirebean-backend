@@ -9,7 +9,7 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.BookmarkRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.BookmarkService;
-import bg.uni.sofia.fmi.spring.hirebean.service.S3Service;
+import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class BookmarkServiceImpl implements BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final JobOfferRepository jobOfferRepository;
     private final UserRepository userRepository;
-    private final S3Service s3Service;
+    private final StorageService storageService;
 
     private JobOfferResponse mapJobOfferToResponse(JobOffer jobOffer) {
         return JobOfferResponse.builder()
@@ -31,7 +31,8 @@ public class BookmarkServiceImpl implements BookmarkService {
                 .description(jobOffer.getDescription())
                 .companyId(jobOffer.getCompany().getId())
                 .companyName(jobOffer.getCompany().getName())
-                .companyLogoUrl(s3Service.getPublicUrl(jobOffer.getCompany().getLogoUrl()))
+                .companyLogoUrl(
+                        storageService.getPublicUrl(jobOffer.getCompany().getLogoUrl()))
                 .location(jobOffer.getLocation())
                 .jobType(jobOffer.getJobType())
                 .minSalary(jobOffer.getMinSalary())

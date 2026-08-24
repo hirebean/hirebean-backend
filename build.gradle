@@ -39,7 +39,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:4.0.0-M1'
     compileOnly 'org.projectlombok:lombok'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'

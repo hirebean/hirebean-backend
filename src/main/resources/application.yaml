@@ -2,16 +2,6 @@ spring:
   application:
     name: hirebean
 
-  # AWS S3 Configuration
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
-      region:
-        static: ${AWS_REGION}
-      s3:
-        bucket: ${AWS_S3_BUCKET_NAME}
   # Setting for uploading files
   servlet:
     multipart:
@@ -54,8 +44,12 @@ management:
       show-details: always
 
 
-cdn:
-  url: ${CDN_URL}
+storage:
+  supabase-url: ${SUPABASE_URL}
+  service-key: ${SUPABASE_SECRET_KEY:${SUPABASE_SERVICE_ROLE_KEY:}}
+  public-bucket: ${SUPABASE_PUBLIC_BUCKET:hirebean-public}
+  private-bucket: ${SUPABASE_PRIVATE_BUCKET:hirebean-private}
+  signed-url-seconds: ${SUPABASE_SIGNED_URL_SECONDS:600}
 
 app:
   backend-url: ${APP_BACKEND_URL:http://localhost:8080}
