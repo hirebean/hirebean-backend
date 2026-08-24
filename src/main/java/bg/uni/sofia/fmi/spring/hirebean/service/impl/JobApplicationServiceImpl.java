@@ -163,6 +163,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
             message += ": " + feedback;
         }
         notificationService.createNotification(saved.getCandidate().getId(), message, "APPLICATION_FEEDBACK");
+        emailService.sendApplicationFeedbackEmail(
+                saved.getCandidate().getEmail(),
+                saved.getJobOffer().getTitle(),
+                saved.getStatus(),
+                saved.getFeedbackMessage());
         auditLogService.record(
                 "REVIEW",
                 "JobApplication",
@@ -189,6 +194,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         }
         notificationService.createNotification(
                 saved.getCandidate().getId(), message, update ? "INTERVIEW_UPDATED" : "INTERVIEW_INVITATION");
+        emailService.sendInterviewInvitationEmail(
+                saved.getCandidate().getEmail(),
+                saved.getJobOffer().getTitle(),
+                saved.getInterviewAt(),
+                saved.getInterviewMessage(),
+                update);
         auditLogService.record(
                 update ? "INTERVIEW_UPDATED" : "INTERVIEW_SCHEDULED",
                 "JobApplication",
@@ -213,6 +224,8 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 saved.getCandidate().getId(),
                 "The interview for " + saved.getJobOffer().getTitle() + " was cancelled.",
                 "INTERVIEW_CANCELLED");
+        emailService.sendInterviewCancellationEmail(
+                saved.getCandidate().getEmail(), saved.getJobOffer().getTitle());
         auditLogService.record(
                 "INTERVIEW_CANCELLED", "JobApplication", applicationId, "Cancelled scheduled interview", "WARNING");
         return mapToResponse(saved);
