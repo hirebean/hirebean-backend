@@ -95,7 +95,9 @@ public class CompanyServiceImpl implements CompanyService {
         company.setName(request.getName());
         company.setDescription(request.getDescription());
         company.setWebsiteUrl(request.getWebsiteUrl());
-        company.setLogoUrl(request.getLogoUrl());
+        if (request.getLogoUrl() != null && !request.getLogoUrl().isBlank()) {
+            company.setLogoUrl(request.getLogoUrl());
+        }
         company.setLocation(request.getLocation());
 
         Company saved = companyRepository.save(company);

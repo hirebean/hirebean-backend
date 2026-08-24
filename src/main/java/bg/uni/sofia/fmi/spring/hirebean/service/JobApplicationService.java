@@ -1,6 +1,8 @@
 package bg.uni.sofia.fmi.spring.hirebean.service;
 
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.InterviewInvitationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobApplicationRequest;
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.ReviewApplicationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobApplicationResponse;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.ApplicationStatus;
 import java.util.List;
@@ -15,4 +17,10 @@ public interface JobApplicationService {
     List<JobApplicationResponse> getApplicationsForJobOffer(Long jobOfferId);
 
     JobApplicationResponse updateStatus(Long applicationId, ApplicationStatus status);
+
+    JobApplicationResponse review(Long applicationId, ReviewApplicationRequest request);
+
+    JobApplicationResponse scheduleInterview(Long applicationId, InterviewInvitationRequest request);
+
+    JobApplicationResponse cancelInterview(Long applicationId);
 }

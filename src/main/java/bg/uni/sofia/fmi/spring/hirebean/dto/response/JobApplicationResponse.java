@@ -17,6 +17,9 @@ public class JobApplicationResponse {
     private String coverLetter;
     private String cvUrl; // time-limited Supabase Storage URL
     private ApplicationStatus status;
+    private String feedbackMessage;
+    private LocalDateTime interviewAt;
+    private String interviewMessage;
 
     private LocalDateTime createdAt;
 }

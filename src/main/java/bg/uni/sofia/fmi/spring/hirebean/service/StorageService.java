@@ -75,6 +75,9 @@ public class StorageService {
         if (key == null || key.isBlank()) {
             return null;
         }
+        if (key.startsWith("https://") || key.startsWith("http://")) {
+            return key;
+        }
         String bucket = bucketForKey(key);
         if (!publicBucket.equals(bucket)) {
             return null;

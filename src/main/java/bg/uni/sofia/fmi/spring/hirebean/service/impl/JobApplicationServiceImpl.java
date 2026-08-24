@@ -1,6 +1,8 @@
 package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.InterviewInvitationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobApplicationRequest;
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.ReviewApplicationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobApplicationResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.job.JobOfferClosedException;
@@ -17,6 +19,7 @@ import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobApplicationService;
 import bg.uni.sofia.fmi.spring.hirebean.service.NotificationService;
 import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class JobApplicationServiceImpl implements JobApplicationService {
+
+    private static final DateTimeFormatter INTERVIEW_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
 
     private final JobApplicationRepository jobApplicationRepository;
 
@@ -48,6 +53,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .coverLetter(application.getCoverLetter())
                 .cvUrl(storageService.getPresignedUrl(application.getCvKey()))
                 .status(application.getStatus())
+                .feedbackMessage(application.getFeedbackMessage())
+                .interviewAt(application.getInterviewAt())
+                .interviewMessage(application.getInterviewMessage())
                 .createdAt(application.getCreatedAt())
                 .build();
     }
@@ -139,5 +147,84 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 "STATUS_UPDATE", "JobApplication", applicationId, "Updated application status to " + status, "INFO");
 
         return mapToResponse(jobApplication);
+    }
+
+    @Override
+    @Transactional
+    public JobApplicationResponse review(Long applicationId, ReviewApplicationRequest request) {
+        JobApplication application = getApplication(applicationId);
+        application.setStatus(request.getStatus());
+        application.setFeedbackMessage(normalize(request.getFeedbackMessage()));
+        JobApplication saved = jobApplicationRepository.save(application);
+
+        String feedback = saved.getFeedbackMessage();
+        String message = "Your application for " + saved.getJobOffer().getTitle() + " is now " + saved.getStatus();
+        if (feedback != null) {
+            message += ": " + feedback;
+        }
+        notificationService.createNotification(saved.getCandidate().getId(), message, "APPLICATION_FEEDBACK");
+        auditLogService.record(
+                "REVIEW",
+                "JobApplication",
+                applicationId,
+                "Updated application to " + saved.getStatus() + " with candidate feedback",
+                "INFO");
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public JobApplicationResponse scheduleInterview(Long applicationId, InterviewInvitationRequest request) {
+        JobApplication application = getApplication(applicationId);
+        boolean update = application.getInterviewAt() != null;
+        application.setInterviewAt(request.getInterviewAt());
+        application.setInterviewMessage(normalize(request.getMessage()));
+        JobApplication saved = jobApplicationRepository.save(application);
+
+        String date = saved.getInterviewAt().format(INTERVIEW_DATE_FORMATTER);
+        String message = (update ? "Your interview was updated" : "You are invited to an interview") + " for "
+                + saved.getJobOffer().getTitle() + " on " + date + ".";
+        if (saved.getInterviewMessage() != null) {
+            message += " " + saved.getInterviewMessage();
+        }
+        notificationService.createNotification(
+                saved.getCandidate().getId(), message, update ? "INTERVIEW_UPDATED" : "INTERVIEW_INVITATION");
+        auditLogService.record(
+                update ? "INTERVIEW_UPDATED" : "INTERVIEW_SCHEDULED",
+                "JobApplication",
+                applicationId,
+                "Interview scheduled for " + date,
+                "INFO");
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public JobApplicationResponse cancelInterview(Long applicationId) {
+        JobApplication application = getApplication(applicationId);
+        if (application.getInterviewAt() == null) {
+            return mapToResponse(application);
+        }
+
+        application.setInterviewAt(null);
+        application.setInterviewMessage(null);
+        JobApplication saved = jobApplicationRepository.save(application);
+        notificationService.createNotification(
+                saved.getCandidate().getId(),
+                "The interview for " + saved.getJobOffer().getTitle() + " was cancelled.",
+                "INTERVIEW_CANCELLED");
+        auditLogService.record(
+                "INTERVIEW_CANCELLED", "JobApplication", applicationId, "Cancelled scheduled interview", "WARNING");
+        return mapToResponse(saved);
+    }
+
+    private JobApplication getApplication(Long applicationId) {
+        return jobApplicationRepository
+                .findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job application not found: " + applicationId));
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
