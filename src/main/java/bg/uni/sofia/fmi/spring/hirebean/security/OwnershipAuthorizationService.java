@@ -170,6 +170,18 @@ public class OwnershipAuthorizationService {
                 .orElse(false);
     }
 
+    public JobOfferVisibilityScope getJobOfferVisibilityScope(Authentication authentication) {
+        if (isAdmin(authentication)) {
+            return JobOfferVisibilityScope.fullVisibility();
+        }
+
+        return currentUser(authentication)
+                .filter(user -> hasRole(user, RoleType.EMPLOYER))
+                .map(User::getCompany)
+                .map(company -> JobOfferVisibilityScope.managedCompanyVisibility(company.getId()))
+                .orElseGet(JobOfferVisibilityScope::publicVisibility);
+    }
+
     private boolean isAdmin(Authentication authentication) {
         return hasAuthority(authentication, "ROLE_ADMIN");
     }

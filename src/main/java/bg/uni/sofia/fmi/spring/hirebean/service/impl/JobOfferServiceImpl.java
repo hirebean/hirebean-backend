@@ -1,5 +1,6 @@
 package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobOfferFilterRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobOfferRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobOfferResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
@@ -8,11 +9,11 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.JobStatus;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
+import bg.uni.sofia.fmi.spring.hirebean.security.JobOfferVisibilityScope;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobOfferService;
 import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import jakarta.persistence.criteria.Join;
-import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -55,22 +56,18 @@ public class JobOfferServiceImpl implements JobOfferService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobOfferResponse> getAllOffers(
-            String search,
-            String location,
-            BigDecimal minSalary,
-            BigDecimal maxSalary,
-            Long companyId,
-            Set<String> tags,
-            Pageable pageable) {
+            JobOfferFilterRequest filterRequest, JobOfferVisibilityScope scope, Pageable pageable) {
         return jobOfferRepository
-                .findAll(buildSpecification(search, location, minSalary, maxSalary, companyId, tags), pageable)
+                .findAll(buildSpecification(filterRequest, scope), pageable)
                 .map(this::mapToResponse);
     }
 
     @Override
-    public JobOfferResponse getOfferById(Long id) {
+    @Transactional(readOnly = true)
+    public JobOfferResponse getOfferById(Long id, JobOfferVisibilityScope scope) {
         JobOffer jobOffer = jobOfferRepository
                 .findById(id)
+                .filter(offer -> canViewJobOffer(offer, scope))
                 .orElseThrow(() -> new ResourceNotFoundException("Job offer not found with id: " + id));
         return mapToResponse(jobOffer);
     }
@@ -137,18 +134,12 @@ public class JobOfferServiceImpl implements JobOfferService {
         auditLogService.record("DELETE", "JobOffer", id, "Deleted job offer", "WARN");
     }
 
-    private Specification<JobOffer> buildSpecification(
-            String search,
-            String location,
-            BigDecimal minSalary,
-            BigDecimal maxSalary,
-            Long companyId,
-            Set<String> tags) {
+    private Specification<JobOffer> buildSpecification(JobOfferFilterRequest filter, JobOfferVisibilityScope scope) {
         return (root, query, criteriaBuilder) -> {
             var predicate = criteriaBuilder.conjunction();
 
-            if (StringUtils.hasText(search)) {
-                String pattern = "%" + search.toLowerCase() + "%";
+            if (StringUtils.hasText(filter.getSearch())) {
+                String pattern = "%" + filter.getSearch().toLowerCase() + "%";
                 predicate = criteriaBuilder.and(
                         predicate,
                         criteriaBuilder.or(
@@ -156,32 +147,33 @@ public class JobOfferServiceImpl implements JobOfferService {
                                 criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), pattern)));
             }
 
-            if (StringUtils.hasText(location)) {
+            if (StringUtils.hasText(filter.getLocation())) {
                 predicate = criteriaBuilder.and(
                         predicate,
                         criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("location")), "%" + location.toLowerCase() + "%"));
+                                criteriaBuilder.lower(root.get("location")),
+                                "%" + filter.getLocation().toLowerCase() + "%"));
             }
 
-            if (minSalary != null) {
+            if (filter.getMinSalary() != null) {
                 predicate = criteriaBuilder.and(
-                        predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("maxSalary"), minSalary));
+                        predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("maxSalary"), filter.getMinSalary()));
             }
 
-            if (maxSalary != null) {
+            if (filter.getMaxSalary() != null) {
                 predicate = criteriaBuilder.and(
-                        predicate, criteriaBuilder.lessThanOrEqualTo(root.get("minSalary"), maxSalary));
+                        predicate, criteriaBuilder.lessThanOrEqualTo(root.get("minSalary"), filter.getMaxSalary()));
             }
 
-            if (companyId != null) {
+            if (filter.getCompanyId() != null) {
                 predicate = criteriaBuilder.and(
-                        predicate, criteriaBuilder.equal(root.get("company").get("id"), companyId));
+                        predicate, criteriaBuilder.equal(root.get("company").get("id"), filter.getCompanyId()));
             }
 
-            if (tags != null && !tags.isEmpty()) {
+            if (filter.getTags() != null && !filter.getTags().isEmpty()) {
                 query.distinct(true);
                 Join<JobOffer, String> tagsJoin = root.join("tags");
-                Set<String> normalizedTags = tags.stream()
+                Set<String> normalizedTags = filter.getTags().stream()
                         .filter(StringUtils::hasText)
                         .map(String::toLowerCase)
                         .collect(java.util.stream.Collectors.toSet());
@@ -191,7 +183,31 @@ public class JobOfferServiceImpl implements JobOfferService {
                 }
             }
 
+            if (filter.getJobStatus() != null) {
+                predicate = criteriaBuilder.and(
+                        predicate, criteriaBuilder.equal(root.get("status"), filter.getJobStatus()));
+            }
+
+            if (!scope.allStatuses()) {
+                var activeOnly = criteriaBuilder.equal(root.get("status"), JobStatus.ACTIVE);
+                predicate = scope.managedCompanyId() == null
+                        ? criteriaBuilder.and(predicate, activeOnly)
+                        : criteriaBuilder.and(
+                                predicate,
+                                criteriaBuilder.or(
+                                        activeOnly,
+                                        criteriaBuilder.equal(
+                                                root.get("company").get("id"), scope.managedCompanyId())));
+            }
+
             return predicate;
         };
+    }
+
+    private boolean canViewJobOffer(JobOffer offer, JobOfferVisibilityScope scope) {
+        return scope.allStatuses()
+                || offer.getStatus() == JobStatus.ACTIVE
+                || (scope.managedCompanyId() != null
+                        && scope.managedCompanyId().equals(offer.getCompany().getId()));
     }
 }

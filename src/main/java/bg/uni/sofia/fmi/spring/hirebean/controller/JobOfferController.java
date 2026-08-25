@@ -1,17 +1,18 @@
 package bg.uni.sofia.fmi.spring.hirebean.controller;
 
+import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobOfferFilterRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobOfferRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobOfferResponse;
+import bg.uni.sofia.fmi.spring.hirebean.security.OwnershipAuthorizationService;
 import bg.uni.sofia.fmi.spring.hirebean.service.JobOfferService;
 import jakarta.validation.Valid;
-import java.math.BigDecimal;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -27,24 +27,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class JobOfferController {
 
+    private final OwnershipAuthorizationService ownershipAuthorizationService;
     private final JobOfferService jobOfferService;
 
     @GetMapping
-    public ResponseEntity<Page<JobOfferResponse>> getAllJobs(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) BigDecimal minSalary,
-            @RequestParam(required = false) BigDecimal maxSalary,
-            @RequestParam(required = false) Long companyId,
-            @RequestParam(required = false) Set<String> tags,
-            Pageable pageable) {
-        return ResponseEntity.ok(
-                jobOfferService.getAllOffers(search, location, minSalary, maxSalary, companyId, tags, pageable));
+    public ResponseEntity<Page<JobOfferResponse>> getJobOffers(
+            JobOfferFilterRequest filterRequest, Pageable pageable, Authentication authentication) {
+        return ResponseEntity.ok(jobOfferService.getAllOffers(
+                filterRequest, ownershipAuthorizationService.getJobOfferVisibilityScope(authentication), pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobOfferResponse> getJobById(@PathVariable Long id) {
-        return ResponseEntity.ok(jobOfferService.getOfferById(id));
+    public ResponseEntity<JobOfferResponse> getJobById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(jobOfferService.getOfferById(
+                id, ownershipAuthorizationService.getJobOfferVisibilityScope(authentication)));
     }
 
     @PostMapping
