@@ -2,6 +2,8 @@ package bg.uni.sofia.fmi.spring.hirebean.config;
 
 import bg.uni.sofia.fmi.spring.hirebean.security.JwtAuthenticationFilter;
 import bg.uni.sofia.fmi.spring.hirebean.security.UserDetailsServiceImpl;
+import bg.uni.sofia.fmi.spring.hirebean.security.handler.HireBeanAccessDeniedHandler;
+import bg.uni.sofia.fmi.spring.hirebean.security.handler.HireBeanAuthenticationEntryPoint;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,8 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final HireBeanAuthenticationEntryPoint authenticationEntryPoint;
+    private final HireBeanAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,6 +62,8 @@ public class SecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated())
+                .exceptionHandling(ex ->
+                        ex.authenticationEntryPoint(authenticationEntryPoint).accessDeniedHandler(accessDeniedHandler))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
