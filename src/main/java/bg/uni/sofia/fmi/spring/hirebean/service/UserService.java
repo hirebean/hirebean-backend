@@ -4,12 +4,14 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.request.ChangePasswordRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.UpdateProfileRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserProfileResponse;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserResponse;
-import java.util.List;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
 
-    List<UserResponse> getAllUsers();
+    Page<UserResponse> getAllUsers(String search, RoleType role, Pageable pageable);
 
     UserResponse getUserById(Long id);
 

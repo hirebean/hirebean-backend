@@ -4,12 +4,14 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.request.ChangePasswordRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.UpdateProfileRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserProfileResponse;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.UserResponse;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,8 +40,11 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) RoleType role,
+            Pageable pageable) {
+        return ResponseEntity.ok(userService.getAllUsers(search, role, pageable));
     }
 
     @GetMapping("/{id}")

@@ -11,22 +11,27 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.PasswordResetToken;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Role;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import bg.uni.sofia.fmi.spring.hirebean.repository.PasswordResetTokenRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.EmailService;
 import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
+import jakarta.persistence.criteria.Join;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -84,8 +89,34 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(this::mapToResponse).toList();
+    public Page<UserResponse> getAllUsers(String search, RoleType role, Pageable pageable) {
+        return userRepository
+                .findAll(buildSpecification(search, role), pageable)
+                .map(this::mapToResponse);
+    }
+
+    private Specification<User> buildSpecification(String search, RoleType role) {
+        return (root, query, criteriaBuilder) -> {
+            var predicate = criteriaBuilder.conjunction();
+
+            if (StringUtils.hasText(search)) {
+                String pattern = "%" + search.toLowerCase() + "%";
+                predicate = criteriaBuilder.and(
+                        predicate,
+                        criteriaBuilder.or(
+                                criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), pattern),
+                                criteriaBuilder.like(criteriaBuilder.lower(root.get("firstName")), pattern),
+                                criteriaBuilder.like(criteriaBuilder.lower(root.get("lastName")), pattern)));
+            }
+
+            if (role != null) {
+                query.distinct(true);
+                Join<User, Role> rolesJoin = root.join("roles");
+                predicate = criteriaBuilder.and(predicate, criteriaBuilder.equal(rolesJoin.get("name"), role));
+            }
+
+            return predicate;
+        };
     }
 
     @Override
