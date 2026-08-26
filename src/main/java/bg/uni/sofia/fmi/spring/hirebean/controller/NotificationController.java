@@ -31,13 +31,6 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.countUnreadNotifications(userId));
     }
 
-    @GetMapping("/user/{userId}/mark-all-read")
-    @PreAuthorize("@ownership.isSelfOrAdmin(authentication, #userId)")
-    public ResponseEntity<Void> markAllAsRead(@PathVariable Long userId) {
-        notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok().build();
-    }
-
     @PatchMapping("/user/{userId}/mark-all-read")
     @PreAuthorize("@ownership.isSelfOrAdmin(authentication, #userId)")
     public ResponseEntity<Void> markAllAsReadWithPatch(@PathVariable Long userId) {
