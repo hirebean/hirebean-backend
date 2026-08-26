@@ -3,8 +3,8 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.CompanyRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.BusinessException;
+import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyAlreadyExistsException;
-import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
@@ -55,7 +55,7 @@ public class CompanyServiceImpl implements CompanyService {
     public CompanyResponse getCompanyById(Long id) {
         Company company = companyRepository
                 .findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + id));
         return mapToResponse(company);
     }
 
@@ -83,7 +83,7 @@ public class CompanyServiceImpl implements CompanyService {
     public CompanyResponse updateCompany(Long id, CompanyRequest request) {
         Company company = companyRepository
                 .findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + id));
 
         companyRepository.findByName(request.getName()).ifPresent(existing -> {
             if (!existing.getId().equals(id)) {
@@ -110,7 +110,7 @@ public class CompanyServiceImpl implements CompanyService {
     public void deleteCompany(Long id) {
         Company company = companyRepository
                 .findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException("Company not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + id));
         companyRepository.delete(company);
         auditLogService.record("DELETE", "Company", id, "Deleted company", "WARN");
     }

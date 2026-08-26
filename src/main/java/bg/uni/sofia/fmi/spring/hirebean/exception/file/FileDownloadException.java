@@ -5,6 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class FileDownloadException extends BusinessException {
     public FileDownloadException(String message) {
-        super("File download failed: " + message, HttpStatus.INTERNAL_SERVER_ERROR);
+        super("File download failed: " + message, HttpStatus.BAD_GATEWAY);
     }
 }
