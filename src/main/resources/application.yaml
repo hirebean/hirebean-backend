@@ -34,6 +34,9 @@ spring:
           starttls:
             enable: true
 
+server:
+  port: ${PORT:8080}
+
 management:
   endpoints:
     web:

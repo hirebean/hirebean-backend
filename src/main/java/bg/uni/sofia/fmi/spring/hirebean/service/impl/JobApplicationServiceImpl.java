@@ -5,6 +5,7 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.request.JobApplicationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.ReviewApplicationRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.JobApplicationResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
+import bg.uni.sofia.fmi.spring.hirebean.exception.application.JobApplicationAlreadyExistsException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.job.JobOfferClosedException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobApplication;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
@@ -23,6 +24,8 @@ import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class JobApplicationServiceImpl implements JobApplicationService {
 
     private static final DateTimeFormatter INTERVIEW_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
+    private static final String APPLICATION_UNIQUE_CONSTRAINT = "uk_job_applications_candidate_job_offer";
 
     private final JobApplicationRepository jobApplicationRepository;
 
@@ -64,39 +68,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     @Override
     @Transactional
     public JobApplicationResponse apply(Long candidateId, JobApplicationRequest request, MultipartFile cvFile) {
-        JobOffer jobOffer = jobOfferRepository
-                .findById(request.getJobOfferId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Job offer not found with id: " + request.getJobOfferId()));
-
-        if (jobOffer.getStatus() != JobStatus.ACTIVE) {
-            throw new JobOfferClosedException(
-                    "Cannot apply to job offer with id: " + request.getJobOfferId() + " because it is not active");
-        }
-        if (jobApplicationRepository.existsByCandidateIdAndJobOfferId(candidateId, request.getJobOfferId())) {
-            throw new JobOfferClosedException("Candidate with id: " + candidateId
-                    + " has already applied to job offer with id: " + request.getJobOfferId());
-        }
-
-        User candidate = userRepository
-                .findById(candidateId)
-                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + candidateId));
-
-        // Upload CV to private Supabase Storage under the "cvs/" folder
-        String cvKey = null;
-        if (cvFile != null && !cvFile.isEmpty()) {
-            cvKey = storageService.uploadFile(cvFile, "cvs");
-        }
-
-        JobApplication application = JobApplication.builder()
-                .candidate(candidate)
-                .jobOffer(jobOffer)
-                .coverLetter(request.getCoverLetter())
-                .cvKey(cvKey)
-                .status(ApplicationStatus.PENDING)
-                .build();
-
-        JobApplication saved = jobApplicationRepository.save(application);
+        JobOffer jobOffer = getActiveJobOffer(request.getJobOfferId());
+        ensureNotAlreadyApplied(candidateId, jobOffer.getId());
+        User candidate = getCandidate(candidateId);
+        JobApplication saved = saveNewApplication(candidate, jobOffer, request.getCoverLetter());
+        attachCv(saved, cvFile);
 
         userRepository
                 .findAllByCompanyId(jobOffer.getCompany().getId())
@@ -108,6 +84,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         auditLogService.record(
                 "APPLY", "JobApplication", saved.getId(), candidateId, "Candidate applied for job", LogSeverity.INFO);
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasApplied(Long candidateId, Long jobOfferId) {
+        return jobApplicationRepository.existsByCandidateIdAndJobOfferId(candidateId, jobOfferId);
     }
 
     @Override
@@ -244,6 +226,64 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         return jobApplicationRepository
                 .findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job application not found: " + applicationId));
+    }
+
+    private JobOffer getActiveJobOffer(Long jobOfferId) {
+        JobOffer jobOffer = jobOfferRepository
+                .findById(jobOfferId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job offer not found with id: " + jobOfferId));
+        if (jobOffer.getStatus() != JobStatus.ACTIVE) {
+            throw new JobOfferClosedException(
+                    "Cannot apply to job offer with id: " + jobOfferId + " because it is not active");
+        }
+        return jobOffer;
+    }
+
+    private void ensureNotAlreadyApplied(Long candidateId, Long jobOfferId) {
+        if (jobApplicationRepository.existsByCandidateIdAndJobOfferId(candidateId, jobOfferId)) {
+            throw new JobApplicationAlreadyExistsException();
+        }
+    }
+
+    private User getCandidate(Long candidateId) {
+        return userRepository
+                .findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + candidateId));
+    }
+
+    private JobApplication saveNewApplication(User candidate, JobOffer jobOffer, String coverLetter) {
+        JobApplication application = JobApplication.builder()
+                .candidate(candidate)
+                .jobOffer(jobOffer)
+                .coverLetter(coverLetter)
+                .status(ApplicationStatus.PENDING)
+                .build();
+        try {
+            return jobApplicationRepository.saveAndFlush(application);
+        } catch (DataIntegrityViolationException exception) {
+            if (violatesApplicationUniqueConstraint(exception)) {
+                throw new JobApplicationAlreadyExistsException();
+            }
+            throw exception;
+        }
+    }
+
+    private boolean violatesApplicationUniqueConstraint(Throwable cause) {
+        Throwable current = cause;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraintViolation
+                    && APPLICATION_UNIQUE_CONSTRAINT.equalsIgnoreCase(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private void attachCv(JobApplication application, MultipartFile cvFile) {
+        if (cvFile != null && !cvFile.isEmpty()) {
+            application.setCvKey(storageService.uploadFile(cvFile, "cvs"));
+        }
     }
 
     private String normalize(String value) {

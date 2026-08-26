@@ -48,6 +48,12 @@ public class JobApplicationController {
         return ResponseEntity.ok(jobApplicationService.getApplicationsForCandidate(candidateId));
     }
 
+    @GetMapping("/candidate/{candidateId}/job/{jobOfferId}/exists")
+    @PreAuthorize("@ownership.canApplyAsCandidate(authentication, #candidateId)")
+    public ResponseEntity<Boolean> hasApplied(@PathVariable Long candidateId, @PathVariable Long jobOfferId) {
+        return ResponseEntity.ok(jobApplicationService.hasApplied(candidateId, jobOfferId));
+    }
+
     @GetMapping("/job/{jobOfferId}")
     @PreAuthorize("@ownership.canViewJobApplications(authentication, #jobOfferId)")
     public ResponseEntity<List<JobApplicationResponse>> getByJobOffer(@PathVariable Long jobOfferId) {

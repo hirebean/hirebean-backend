@@ -12,6 +12,8 @@ public interface JobApplicationService {
 
     JobApplicationResponse apply(Long candidateId, JobApplicationRequest request, MultipartFile cvFile);
 
+    boolean hasApplied(Long candidateId, Long jobOfferId);
+
     List<JobApplicationResponse> getApplicationsForCandidate(Long candidateId);
 
     List<JobApplicationResponse> getApplicationsForJobOffer(Long jobOfferId);
