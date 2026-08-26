@@ -100,7 +100,7 @@ public class StorageService {
         HttpResponse<String> response =
                 sendRequestToStorage(request, () -> new FileDownloadException(GENERATE_LINK_FAILED_MESSAGE));
         String signedUrl = readSignedUrl(response);
-        return signedUrl.startsWith("http") ? signedUrl : trimTrailingSlash(supabaseUrl) + signedUrl;
+        return resolveStorageUrl(signedUrl);
     }
 
     private String readSignedUrl(HttpResponse<String> response) {
@@ -146,6 +146,16 @@ public class StorageService {
 
     private String storageBaseUrl() {
         return trimTrailingSlash(supabaseUrl) + "/storage/v1";
+    }
+
+    private String resolveStorageUrl(String url) {
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            return url;
+        }
+        if (url.startsWith("/storage/v1/")) {
+            return trimTrailingSlash(supabaseUrl) + url;
+        }
+        return storageBaseUrl() + (url.startsWith("/") ? url : "/" + url);
     }
 
     private String objectEndpoint(String bucket, String key) {
