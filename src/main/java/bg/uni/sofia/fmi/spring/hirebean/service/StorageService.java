@@ -1,5 +1,8 @@
 package bg.uni.sofia.fmi.spring.hirebean.service;
 
+import bg.uni.sofia.fmi.spring.hirebean.exception.file.FileDownloadException;
+import bg.uni.sofia.fmi.spring.hirebean.exception.file.FileUploadException;
+import bg.uni.sofia.fmi.spring.hirebean.exception.file.InvalidFileTypeException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,8 +15,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +28,9 @@ public class StorageService {
 
     private static final long MAX_FILE_BYTES = 10L * 1024 * 1024;
     private static final int DEFAULT_SIGNED_URL_SECONDS = 600;
+
+    private static final String STORE_FILE_FAILED_MESSAGE = "Could not store the file.";
+    private static final String GENERATE_LINK_FAILED_MESSAGE = "Could not generate link for the file.";
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient =
@@ -51,24 +59,14 @@ public class StorageService {
         String bucket = bucketForFolder(folder);
         String endpoint = objectEndpoint(bucket, key);
 
-        try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
-                    .timeout(Duration.ofSeconds(60))
-                    .header("Authorization", "Bearer " + serviceKey)
-                    .header("apikey", serviceKey)
-                    .header("Content-Type", contentTypeOf(file))
-                    .header("x-upsert", "false")
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(file.getBytes()))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            ensureSuccess(response, "upload", bucket, key);
-            return key;
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to upload file to Supabase Storage", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("File upload was interrupted", e);
-        }
+        HttpRequest request = createAuthorizedRequest(endpoint)
+                .timeout(Duration.ofSeconds(60))
+                .header("Content-Type", contentTypeOf(file))
+                .header("x-upsert", "false")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(getFileBytes(file)))
+                .build();
+        sendRequestToStorage(request, () -> new FileUploadException(STORE_FILE_FAILED_MESSAGE));
+        return key;
     }
 
     public String getPublicUrl(String key) {
@@ -93,31 +91,27 @@ public class StorageService {
         String bucket = bucketForKey(key);
         int expiresIn = signedUrlSeconds > 0 ? signedUrlSeconds : DEFAULT_SIGNED_URL_SECONDS;
         String endpoint = storageBaseUrl() + "/object/sign/" + encodePath(bucket) + "/" + encodePath(key);
-        String body = "{\"expiresIn\":" + expiresIn + "}";
 
+        HttpRequest request = createAuthorizedRequest(endpoint)
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"expiresIn\":" + expiresIn + "}"))
+                .build();
+        HttpResponse<String> response =
+                sendRequestToStorage(request, () -> new FileDownloadException(GENERATE_LINK_FAILED_MESSAGE));
+        String signedUrl = readSignedUrl(response);
+        return signedUrl.startsWith("http") ? signedUrl : trimTrailingSlash(supabaseUrl) + signedUrl;
+    }
+
+    private String readSignedUrl(HttpResponse<String> response) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
-                    .timeout(Duration.ofSeconds(15))
-                    .header("Authorization", "Bearer " + serviceKey)
-                    .header("apikey", serviceKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            ensureSuccess(response, "sign URL", bucket, key);
-            JsonNode payload = objectMapper.readTree(response.body());
-            String signedUrl = textValue(payload, "signedURL", "signedUrl");
+            String signedUrl = textValue(objectMapper.readTree(response.body()), "signedURL", "signedUrl");
             if (signedUrl == null) {
-                throw new IllegalStateException("Supabase Storage returned no signed URL");
+                throw new FileDownloadException("Storage returned no signed url.");
             }
-            return signedUrl.startsWith("http") ? signedUrl : trimTrailingSlash(supabaseUrl) + signedUrl;
+            return signedUrl;
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Invalid signed URL response from Supabase Storage", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create signed URL from Supabase Storage", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Signed URL request was interrupted", e);
+            throw new FileDownloadException(GENERATE_LINK_FAILED_MESSAGE);
         }
     }
 
@@ -129,7 +123,7 @@ public class StorageService {
             throw new IllegalArgumentException("File exceeds the maximum allowed size of 10 MB.");
         }
         if (folder == null || folder.isBlank() || folder.contains("..") || folder.contains("/")) {
-            throw new IllegalArgumentException("Invalid storage folder.");
+            throw new InvalidFileTypeException("Invalid storage folder.");
         }
     }
 
@@ -191,10 +185,32 @@ public class StorageService {
         return null;
     }
 
-    private void ensureSuccess(HttpResponse<String> response, String operation, String bucket, String key) {
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IllegalStateException("Supabase Storage " + operation + " failed with HTTP status "
-                    + response.statusCode() + " for bucket " + bucket + " and key " + key);
+    private HttpRequest.Builder createAuthorizedRequest(String endpoint) {
+        return HttpRequest.newBuilder(URI.create(endpoint))
+                .header("Authorization", "Bearer " + serviceKey)
+                .header("apikey", serviceKey);
+    }
+
+    private HttpResponse<String> sendRequestToStorage(HttpRequest request, Supplier<RuntimeException> onFailure) {
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (!HttpStatusCode.valueOf(response.statusCode()).is2xxSuccessful()) {
+                throw onFailure.get();
+            }
+            return response;
+        } catch (IOException e) {
+            throw onFailure.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw onFailure.get();
+        }
+    }
+
+    private byte[] getFileBytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (IOException e) {
+            throw new FileUploadException(STORE_FILE_FAILED_MESSAGE);
         }
     }
 }

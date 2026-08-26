@@ -1,6 +1,7 @@
 package bg.uni.sofia.fmi.spring.hirebean.controller;
 
 import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +21,13 @@ public class FileController {
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(
             @RequestParam("file") MultipartFile file, @RequestParam("folder") String folder) {
+        Map<String, String> responseBody = new HashMap<>();
         String key = storageService.uploadFile(file, folder);
+        responseBody.put("key", key);
         String publicUrl = storageService.getPublicUrl(key);
-        return ResponseEntity.ok(Map.of("key", key, "publicUrl", publicUrl));
+        if (publicUrl != null) {
+            responseBody.put("publicUrl", publicUrl);
+        }
+        return ResponseEntity.ok(responseBody);
     }
 }
