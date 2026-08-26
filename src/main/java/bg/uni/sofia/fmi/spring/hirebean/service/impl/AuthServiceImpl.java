@@ -9,6 +9,7 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.RevokedToken;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Role;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.RevokedTokenRepository;
@@ -101,7 +102,8 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(userDetails);
 
-        auditLogService.record("REGISTER", "User", user.getId(), "User registered as " + requestedRole, "INFO");
+        auditLogService.record(
+                "REGISTER", "User", user.getId(), "User registered as " + requestedRole, LogSeverity.INFO);
 
         return AuthResponse.builder()
                 .userId(user.getId())
@@ -131,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
 
         String primaryRole = resolvePrimaryRole(user.getRoles());
 
-        auditLogService.record("LOGIN", "User", user.getId(), user.getId(), "User logged in", "INFO");
+        auditLogService.record("LOGIN", "User", user.getId(), user.getId(), "User logged in", LogSeverity.INFO);
 
         return AuthResponse.builder()
                 .userId(user.getId())
@@ -161,6 +163,6 @@ public class AuthServiceImpl implements AuthService {
         revokedTokenRepository.save(
                 RevokedToken.builder().token(token).expiresAt(expiresAt).build());
         revokedTokenRepository.deleteAllByExpiresAtBefore(LocalDateTime.now());
-        auditLogService.record("LOGOUT", "User", null, "User logged out", "INFO");
+        auditLogService.record("LOGOUT", "User", null, "User logged out", LogSeverity.INFO);
     }
 }

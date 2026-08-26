@@ -1,6 +1,7 @@
 package bg.uni.sofia.fmi.spring.hirebean.controller;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.LogResponse;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class AdminLogController {
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String entity,
-            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) LogSeverity severity,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             Pageable pageable) {

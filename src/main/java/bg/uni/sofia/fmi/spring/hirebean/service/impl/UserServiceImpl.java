@@ -10,6 +10,7 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.CandidateProfile;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.PasswordResetToken;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Role;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.PasswordResetTokenRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
@@ -163,7 +164,7 @@ public class UserServiceImpl implements UserService {
         profile.setProfilePictureUrl(key);
 
         userRepository.save(user);
-        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded profile picture", "INFO");
+        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded profile picture", LogSeverity.INFO);
         return mapToProfileResponse(user);
     }
 
@@ -180,7 +181,7 @@ public class UserServiceImpl implements UserService {
         profile.setResumeUrl(key);
 
         userRepository.save(user);
-        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded resume", "INFO");
+        auditLogService.record("UPLOAD", "UserProfile", userId, "Uploaded resume", LogSeverity.INFO);
         return mapToProfileResponse(user);
     }
 
@@ -207,7 +208,12 @@ public class UserServiceImpl implements UserService {
         passwordResetTokenRepository.save(resetToken);
         emailService.sendPasswordResetEmail(user.getEmail(), token);
         auditLogService.record(
-                "PASSWORD_RESET_REQUEST", "User", user.getId(), user.getId(), "Password reset requested", "INFO");
+                "PASSWORD_RESET_REQUEST",
+                "User",
+                user.getId(),
+                user.getId(),
+                "Password reset requested",
+                LogSeverity.INFO);
     }
 
     @Override
@@ -232,7 +238,7 @@ public class UserServiceImpl implements UserService {
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
         auditLogService.record(
-                "PASSWORD_RESET", "User", user.getId(), user.getId(), "Password reset completed", "INFO");
+                "PASSWORD_RESET", "User", user.getId(), user.getId(), "Password reset completed", LogSeverity.INFO);
     }
 
     @Override
@@ -242,6 +248,6 @@ public class UserServiceImpl implements UserService {
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         userRepository.delete(user);
-        auditLogService.record("DELETE", "User", id, "Deleted user", "WARN");
+        auditLogService.record("DELETE", "User", id, "Deleted user", LogSeverity.WARN);
     }
 }

@@ -2,6 +2,7 @@ package bg.uni.sofia.fmi.spring.hirebean.service.impl;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.AiPromptRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.AiPromptResponse;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.service.AiAssistantService;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import java.time.LocalDateTime;
@@ -24,7 +25,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 StringUtils.hasText(request.getPurpose()) ? request.getPurpose().trim() : "general";
         String response = buildLocalResponse(prompt, purpose);
 
-        auditLogService.record("PROMPT", "AiAssistant", null, "Generated local AI assistant draft", "INFO");
+        auditLogService.record("PROMPT", "AiAssistant", null, "Generated local AI assistant draft", LogSeverity.INFO);
 
         return AiPromptResponse.builder()
                 .prompt(prompt)

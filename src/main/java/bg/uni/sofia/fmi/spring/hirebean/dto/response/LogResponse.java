@@ -1,5 +1,6 @@
 package bg.uni.sofia.fmi.spring.hirebean.dto.response;
 
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,6 @@ public class LogResponse {
     private Long actorId;
     private String actorEmail;
     private String details;
-    private String severity;
+    private LogSeverity severity;
     private LocalDateTime timestamp;
 }

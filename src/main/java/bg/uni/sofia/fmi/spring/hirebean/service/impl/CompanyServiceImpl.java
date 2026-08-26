@@ -7,6 +7,7 @@ import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.exception.company.CompanyAlreadyExistsException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.RoleType;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
@@ -74,7 +75,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .build();
         Company saved = companyRepository.save(company);
         assignCompanyToCurrentEmployer(saved);
-        auditLogService.record("CREATE", "Company", saved.getId(), "Created company", "INFO");
+        auditLogService.record("CREATE", "Company", saved.getId(), "Created company", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -101,7 +102,7 @@ public class CompanyServiceImpl implements CompanyService {
         company.setLocation(request.getLocation());
 
         Company saved = companyRepository.save(company);
-        auditLogService.record("UPDATE", "Company", saved.getId(), "Updated company", "INFO");
+        auditLogService.record("UPDATE", "Company", saved.getId(), "Updated company", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -112,7 +113,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + id));
         companyRepository.delete(company);
-        auditLogService.record("DELETE", "Company", id, "Deleted company", "WARN");
+        auditLogService.record("DELETE", "Company", id, "Deleted company", LogSeverity.WARN);
     }
 
     private void assignCompanyToCurrentEmployer(Company company) {

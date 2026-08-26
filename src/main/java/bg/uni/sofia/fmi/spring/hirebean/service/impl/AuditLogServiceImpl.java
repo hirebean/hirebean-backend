@@ -4,6 +4,7 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.response.LogResponse;
 import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Log;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.LogRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
@@ -62,20 +63,21 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void record(String action, String entity, Long entityId, String details, String severity) {
+    public void record(String action, String entity, Long entityId, String details, LogSeverity severity) {
         record(action, entity, entityId, null, details, severity);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void record(String action, String entity, Long entityId, Long actorId, String details, String severity) {
+    public void record(
+            String action, String entity, Long entityId, Long actorId, String details, LogSeverity severity) {
         Log log = Log.builder()
                 .action(action)
                 .entity(entity)
                 .entityId(entityId)
                 .actor(resolveActor(actorId))
                 .details(details)
-                .severity(StringUtils.hasText(severity) ? severity : "INFO")
+                .severity(severity != null ? severity : LogSeverity.INFO)
                 .build();
         logRepository.save(log);
     }
@@ -86,7 +88,7 @@ public class AuditLogServiceImpl implements AuditLogService {
             Long actorId,
             String action,
             String entity,
-            String severity,
+            LogSeverity severity,
             LocalDateTime from,
             LocalDateTime to,
             Pageable pageable) {
@@ -110,10 +112,8 @@ public class AuditLogServiceImpl implements AuditLogService {
                         criteriaBuilder.like(
                                 criteriaBuilder.lower(root.get("entity")), "%" + entity.toLowerCase() + "%"));
             }
-            if (StringUtils.hasText(severity)) {
-                predicate = criteriaBuilder.and(
-                        predicate,
-                        criteriaBuilder.equal(criteriaBuilder.lower(root.get("severity")), severity.toLowerCase()));
+            if (severity != null) {
+                predicate = criteriaBuilder.and(predicate, criteriaBuilder.equal(root.get("severity"), severity));
             }
             if (from != null) {
                 predicate = criteriaBuilder.and(

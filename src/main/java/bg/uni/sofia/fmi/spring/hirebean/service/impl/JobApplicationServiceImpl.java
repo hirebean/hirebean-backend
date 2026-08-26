@@ -11,6 +11,7 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.ApplicationStatus;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.JobStatus;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobApplicationRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
@@ -105,7 +106,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                         "APPLICATION_CREATED"));
 
         auditLogService.record(
-                "APPLY", "JobApplication", saved.getId(), candidateId, "Candidate applied for job", "INFO");
+                "APPLY", "JobApplication", saved.getId(), candidateId, "Candidate applied for job", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -144,7 +145,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 jobApplication.getJobOffer().getTitle(),
                 status);
         auditLogService.record(
-                "STATUS_UPDATE", "JobApplication", applicationId, "Updated application status to " + status, "INFO");
+                "STATUS_UPDATE",
+                "JobApplication",
+                applicationId,
+                "Updated application status to " + status,
+                LogSeverity.INFO);
 
         return mapToResponse(jobApplication);
     }
@@ -173,7 +178,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 "JobApplication",
                 applicationId,
                 "Updated application to " + saved.getStatus() + " with candidate feedback",
-                "INFO");
+                LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -205,7 +210,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 "JobApplication",
                 applicationId,
                 "Interview scheduled for " + date,
-                "INFO");
+                LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -227,7 +232,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         emailService.sendInterviewCancellationEmail(
                 saved.getCandidate().getEmail(), saved.getJobOffer().getTitle());
         auditLogService.record(
-                "INTERVIEW_CANCELLED", "JobApplication", applicationId, "Cancelled scheduled interview", "WARNING");
+                "INTERVIEW_CANCELLED",
+                "JobApplication",
+                applicationId,
+                "Cancelled scheduled interview",
+                LogSeverity.WARN);
         return mapToResponse(saved);
     }
 

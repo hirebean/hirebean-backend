@@ -7,6 +7,7 @@ import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.JobStatus;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.security.JobOfferVisibilityScope;
@@ -93,7 +94,7 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .build();
 
         JobOffer saved = jobOfferRepository.save(jobOffer);
-        auditLogService.record("CREATE", "JobOffer", saved.getId(), "Created job offer", "INFO");
+        auditLogService.record("CREATE", "JobOffer", saved.getId(), "Created job offer", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -120,7 +121,7 @@ public class JobOfferServiceImpl implements JobOfferService {
         jobOffer.setCompany(company);
 
         JobOffer saved = jobOfferRepository.save(jobOffer);
-        auditLogService.record("UPDATE", "JobOffer", saved.getId(), "Updated job offer", "INFO");
+        auditLogService.record("UPDATE", "JobOffer", saved.getId(), "Updated job offer", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -131,7 +132,7 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Job offer not found with id: " + id));
         jobOfferRepository.delete(jobOffer);
-        auditLogService.record("DELETE", "JobOffer", id, "Deleted job offer", "WARN");
+        auditLogService.record("DELETE", "JobOffer", id, "Deleted job offer", LogSeverity.WARN);
     }
 
     private Specification<JobOffer> buildSpecification(JobOfferFilterRequest filter, JobOfferVisibilityScope scope) {

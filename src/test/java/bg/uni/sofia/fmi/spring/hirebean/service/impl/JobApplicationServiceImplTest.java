@@ -11,6 +11,7 @@ import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobApplication;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.JobOffer;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
 import bg.uni.sofia.fmi.spring.hirebean.model.enums.ApplicationStatus;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobApplicationRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.JobOfferRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
@@ -105,7 +106,7 @@ class JobApplicationServiceImplTest {
                         "JobApplication",
                         40L,
                         "Updated application to REVIEWED with candidate feedback",
-                        "INFO");
+                        LogSeverity.INFO);
     }
 
     @Test
@@ -135,6 +136,6 @@ class JobApplicationServiceImplTest {
                         "Interview scheduled for "
                                 + interviewAt.format(
                                         java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")),
-                        "INFO");
+                        LogSeverity.INFO);
     }
 }

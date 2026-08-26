@@ -6,6 +6,7 @@ import bg.uni.sofia.fmi.spring.hirebean.exception.ResourceNotFoundException;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Company;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.Post;
 import bg.uni.sofia.fmi.spring.hirebean.model.entity.User;
+import bg.uni.sofia.fmi.spring.hirebean.model.enums.LogSeverity;
 import bg.uni.sofia.fmi.spring.hirebean.repository.CompanyRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.PostRepository;
 import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
@@ -90,7 +91,8 @@ public class PostServiceImpl implements PostService {
                 .build();
 
         Post saved = postRepository.save(post);
-        auditLogService.record("CREATE", "Post", saved.getId(), request.getAuthorId(), "Created company post", "INFO");
+        auditLogService.record(
+                "CREATE", "Post", saved.getId(), request.getAuthorId(), "Created company post", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -108,7 +110,8 @@ public class PostServiceImpl implements PostService {
         post.setAuthor(getAuthor(request.getAuthorId()));
 
         Post saved = postRepository.save(post);
-        auditLogService.record("UPDATE", "Post", saved.getId(), request.getAuthorId(), "Updated company post", "INFO");
+        auditLogService.record(
+                "UPDATE", "Post", saved.getId(), request.getAuthorId(), "Updated company post", LogSeverity.INFO);
         return mapToResponse(saved);
     }
 
@@ -119,6 +122,6 @@ public class PostServiceImpl implements PostService {
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + id));
         postRepository.delete(post);
-        auditLogService.record("DELETE", "Post", id, "Deleted company post", "WARN");
+        auditLogService.record("DELETE", "Post", id, "Deleted company post", LogSeverity.WARN);
     }
 }
