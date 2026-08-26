@@ -29,14 +29,13 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final UserRepository userRepository;
 
     private LogResponse mapToResponse(Log log) {
-        User actor = log.getActor();
         return LogResponse.builder()
                 .id(log.getId())
                 .action(log.getAction())
                 .entity(log.getEntity())
                 .entityId(log.getEntityId())
-                .actorId(actor != null ? actor.getId() : null)
-                .actorEmail(actor != null ? actor.getEmail() : null)
+                .actorId(log.getActorId())
+                .actorEmail(log.getActorEmail())
                 .details(log.getDetails())
                 .severity(log.getSeverity())
                 .timestamp(log.getTimestamp())
@@ -71,11 +70,13 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(
             String action, String entity, Long entityId, Long actorId, String details, LogSeverity severity) {
+        User actor = resolveActor(actorId);
         Log log = Log.builder()
                 .action(action)
                 .entity(entity)
                 .entityId(entityId)
-                .actor(resolveActor(actorId))
+                .actorId(actor != null ? actor.getId() : null)
+                .actorEmail(actor != null ? actor.getEmail() : null)
                 .details(details)
                 .severity(severity != null ? severity : LogSeverity.INFO)
                 .build();
@@ -97,8 +98,7 @@ public class AuditLogServiceImpl implements AuditLogService {
             Predicate predicate = criteriaBuilder.conjunction();
 
             if (actorId != null) {
-                predicate = criteriaBuilder.and(
-                        predicate, criteriaBuilder.equal(root.get("actor").get("id"), actorId));
+                predicate = criteriaBuilder.and(predicate, criteriaBuilder.equal(root.get("actorId"), actorId));
             }
             if (StringUtils.hasText(action)) {
                 predicate = criteriaBuilder.and(
