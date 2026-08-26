@@ -145,7 +145,11 @@ public class JobOfferServiceImpl implements JobOfferService {
                         predicate,
                         criteriaBuilder.or(
                                 criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern),
-                                criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), pattern)));
+                                criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), pattern),
+                                criteriaBuilder.like(
+                                        criteriaBuilder.lower(
+                                                root.get("company").get("name")),
+                                        pattern)));
             }
 
             if (StringUtils.hasText(filter.getLocation())) {
