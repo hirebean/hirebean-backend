@@ -4,8 +4,9 @@ import bg.uni.sofia.fmi.spring.hirebean.dto.request.CompanyRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -26,9 +28,9 @@ public class CompanyController {
     private final CompanyService companyService;
 
     @GetMapping
-    public ResponseEntity<List<CompanyResponse>> getAllCompanies() {
-        List<CompanyResponse> companies = companyService.getAllCompanies();
-        return ResponseEntity.ok(companies);
+    public ResponseEntity<Page<CompanyResponse>> getAllCompanies(
+            @RequestParam(required = false) String search, Pageable pageable) {
+        return ResponseEntity.ok(companyService.getAllCompanies(search, pageable));
     }
 
     @GetMapping("/{id}")

@@ -14,15 +14,16 @@ import bg.uni.sofia.fmi.spring.hirebean.repository.UserRepository;
 import bg.uni.sofia.fmi.spring.hirebean.service.AuditLogService;
 import bg.uni.sofia.fmi.spring.hirebean.service.CompanyService;
 import bg.uni.sofia.fmi.spring.hirebean.service.StorageService;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -48,8 +49,12 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CompanyResponse> getAllCompanies() {
-        return companyRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
+    public Page<CompanyResponse> getAllCompanies(String search, Pageable pageable) {
+        Page<Company> companies = StringUtils.hasText(search)
+                ? companyRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                        search, search, pageable)
+                : companyRepository.findAll(pageable);
+        return companies.map(this::mapToResponse);
     }
 
     @Override

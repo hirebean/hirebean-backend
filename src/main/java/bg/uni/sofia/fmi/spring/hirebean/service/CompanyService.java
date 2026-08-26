@@ -2,11 +2,12 @@ package bg.uni.sofia.fmi.spring.hirebean.service;
 
 import bg.uni.sofia.fmi.spring.hirebean.dto.request.CompanyRequest;
 import bg.uni.sofia.fmi.spring.hirebean.dto.response.CompanyResponse;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface CompanyService {
 
-    List<CompanyResponse> getAllCompanies();
+    Page<CompanyResponse> getAllCompanies(String search, Pageable pageable);
 
     CompanyResponse getCompanyById(Long id);
 
