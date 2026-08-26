@@ -19,6 +19,7 @@ import bg.uni.sofia.fmi.spring.hirebean.service.UserService;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -186,10 +187,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void requestPasswordReset(String email) {
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return;
+        }
 
+        User user = userOpt.get();
         // Delete old tokens for this user
         passwordResetTokenRepository.deleteAllByUserId(user.getId());
 
