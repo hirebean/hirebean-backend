@@ -94,8 +94,8 @@ RLS. See the [Supabase API-key documentation](https://supabase.com/docs/guides/g
 
 ### 4. Start PostgreSQL
 
-The Compose file starts only PostgreSQL. It exposes the database on local port `5433`, matching the URL in
-`env_example`.
+The Compose file defines both PostgreSQL and the backend. This step starts PostgreSQL alone, which is what the Gradle
+workflow in step 5 needs. It exposes the database on local port `5433`, matching the URL in `env_example`.
 
 ```bash
 docker compose up -d postgres
@@ -122,6 +122,18 @@ Linux or macOS:
 If the wrapper is not executable on Linux or macOS, run `chmod +x gradlew` once.
 
 On first startup, the application creates the `CANDIDATE`, `EMPLOYER`, and `ADMIN` roles if they do not exist.
+
+### Alternative: run the backend in Docker
+
+Instead of steps 4 and 5, start PostgreSQL and the backend together:
+
+```bash
+docker compose up -d --build
+```
+
+```bash
+docker compose up -d --build backend  # rebuild after changing Java code
+```
 
 ### 6. Verify the installation
 
@@ -193,7 +205,10 @@ Disable it again after use.
 | Build the application | `.\gradlew.bat build` | `./gradlew build` |
 | Start PostgreSQL | `docker compose up -d postgres` | `docker compose up -d postgres` |
 | View PostgreSQL logs | `docker compose logs -f postgres` | `docker compose logs -f postgres` |
-| Stop PostgreSQL | `docker compose down` | `docker compose down` |
+| Start PostgreSQL and the backend | `docker compose up -d --build` | `docker compose up -d --build` |
+| View backend logs | `docker compose logs -f backend` | `docker compose logs -f backend` |
+| Rebuild the backend image | `docker compose build backend` | `docker compose build backend` |
+| Stop the containers | `docker compose down` | `docker compose down` |
 
 The built executable JAR is written under `build/libs/`.
 

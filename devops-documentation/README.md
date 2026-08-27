@@ -8,29 +8,34 @@ checked-in Kubernetes and continuous-deployment configuration is production-read
 
 ## Local infrastructure
 
-The root [`docker-compose.yml`](../docker-compose.yml) starts a PostgreSQL 17 container only. It is a local dependency,
-not a complete application stack.
-
 ```bash
-docker compose up -d postgres
+docker compose up -d --build     # PostgreSQL and the backend
+docker compose up -d postgres    # PostgreSQL only, for the Gradle Wrapper workflow
 docker compose ps
-docker compose logs -f postgres
+docker compose logs -f backend
 ```
 
-The database is exposed as `localhost:5433`; the container listens on `5432`. The matching local JDBC URL is:
+The database is exposed as `localhost:5433`; the container listens on `5432`. Which JDBC URL is correct depends on
+where the client runs:
 
 ```text
-jdbc:postgresql://localhost:5433/hirebean_db
+jdbc:postgresql://localhost:5433/hirebean_db   # backend started with ./gradlew bootRun
+jdbc:postgresql://postgres:5432/hirebean_db    # backend running as a Compose service
 ```
 
-The backend runs separately through the Gradle Wrapper. See the root [setup guide](../README.md).
+The frontend has its own Compose file in the
+[HireBean Frontend](https://github.com/darimachine/HireBean-Frontend) repository and runs as a separate Compose
+project. The two stacks need no shared network: the frontend image serves a static bundle, so the browser on the host
+is the API client and reaches the backend on `localhost:8080`. Start them in any order.
+
+See the [setup guide](../README.md) for the full local workflow.
 
 ## Container image
 
 The root [`Dockerfile`](../Dockerfile) is a multi-stage Java 21 build:
 
-1. A Gradle/JDK 21 image builds the executable JAR with tests skipped.
-2. A Java 21 JRE image copies the JAR and listens on port `8080`.
+1. A Temurin JDK 21 image runs `./gradlew bootJar`, producing the executable JAR only.
+2. A Java 21 JRE image copies that JAR and listens on port `8080`.
 
 Build and inspect the image locally only after tests have passed:
 
@@ -40,7 +45,7 @@ docker build -t hirebean-backend:local .
 ```
 
 The container still needs all required environment variables and reachable PostgreSQL, Supabase, and SMTP services.
-The repository does not currently provide a Compose service that wires the backend container to PostgreSQL.
+`docker-compose.yml` wires this image to PostgreSQL for local use; Supabase and SMTP remain external.
 
 ## Continuous integration
 
