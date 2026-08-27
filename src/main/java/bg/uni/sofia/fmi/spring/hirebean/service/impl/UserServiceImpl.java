@@ -160,12 +160,6 @@ public class UserServiceImpl implements UserService {
 
         CandidateProfile profile = getOrCreateProfile(user);
 
-        if (profile == null) {
-            profile = new CandidateProfile();
-            profile.setUser(user);
-            user.setCandidateProfile(profile);
-        }
-
         if (request.getBio() != null) {
             profile.setBio(request.getBio());
         }
