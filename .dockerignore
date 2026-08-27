@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+build
+.env
+node_modules
+k8s
+docs
+devops-documentation
+*.md

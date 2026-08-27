@@ -10,6 +10,23 @@ services:
       POSTGRES_PASSWORD: ${HIREBEAN_DB_PASS}
     volumes:
       - hirebean-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${HIREBEAN_DB_USERNAME} -d hirebean_db" ]
+      interval: 5s
+      retries: 12
+
+  backend:
+    build: .
+    container_name: hirebean-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirebean_db
+    ports:
+      - "8080:8080"
 
 volumes:
     hirebean-db-data:
