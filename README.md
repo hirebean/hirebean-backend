@@ -1,86 +1,231 @@
-# HireBean-Backend, Spring Backend & React & Typescript app + Devops
+# HireBean Backend
 
-# HireBean-Frontend is here -> https://github.com/darimachine/HireBean-Frontend
-## Форматиране
-| Цел           | Команда                   |
-| ------------- | ------------------------- |
-| Форматиране   | `./gradlew spotlessApply` |
-| Проверка (CI) | `./gradlew spotlessCheck` |
+HireBean Backend is the Spring Boot API for a recruitment platform. It provides JWT authentication, candidate and
+employer profiles, companies, job offers, applications, bookmarks, notifications, company posts, audit logs, file
+storage, password-reset email delivery, and a local template-based career assistant.
 
-## Local backend checks
+The separate frontend repository is available at
+[HireBean Frontend](https://github.com/darimachine/HireBean-Frontend).
 
-Проектът е настроен за Java 21 toolchain. Ако default Java на машината е по-нова, пусни Gradle с JDK 21:
+## Technology overview
 
-```powershell
-$env:JAVA_HOME='C:\Users\Az\.jdks\temurin-21.0.9'
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-.\gradlew.bat test
+- Java 21 and Spring Boot
+- PostgreSQL with Spring Data JPA
+- Stateless bearer-token authentication with JWT
+- Supabase Storage for public images and private CVs/resumes
+- Gmail SMTP for password-reset messages
+- Gradle Wrapper, JUnit, H2, Spotless, Docker, and Spring Boot Actuator
+- Runtime OpenAPI documentation through Springdoc and Swagger UI
+
+## Prerequisites
+
+Install the following before starting the backend:
+
+- JDK 21
+- Docker Desktop, or Docker Engine with Docker Compose v2
+- Git
+- A Supabase project for file storage
+- A Gmail SMTP account or app password if password-reset email delivery will be used
+
+Gradle does not need to be installed globally; use the included Gradle Wrapper. Node.js and npm are not required to
+run this Java backend.
+
+## Local setup
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd hirebean-backend
 ```
 
-Swagger UI:
+Run all following commands from the repository root. The application loads `.env` from the current working directory.
 
-```text
-http://localhost:8080/swagger-ui/index.html
-```
+### 2. Create the local environment file
 
-## Local demo data
-
-> Local/demo only. Never enable this seed in a shared, staging, or production environment.
-
-Demo data is disabled by default. Enable it for a local run with:
+Windows PowerShell:
 
 ```powershell
-$env:APP_SEED_DEMO_DATA='true'
+Copy-Item env_example .env
+```
+
+Linux or macOS:
+
+```bash
+cp env_example .env
+```
+
+Edit `.env` and replace every `replace-with-...` or `your-...` value. The file is ignored by Git; never commit it.
+See [Environment variables](#environment-variables) for each setting.
+
+Generate a local JWT secret with one of these commands:
+
+Windows PowerShell:
+
+```powershell
+$bytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Linux or macOS:
+
+```bash
+openssl rand -base64 32
+```
+
+Copy the generated value into `JWT_SECRET`.
+
+### 3. Configure Supabase Storage
+
+In the Supabase dashboard:
+
+1. Create a bucket named `hirebean-public` and mark it **Public**. It stores profile pictures, company logos, and post
+   images.
+2. Create a bucket named `hirebean-private` and leave it **Private**. It stores resumes and application CVs.
+3. Copy the project URL into `SUPABASE_URL`.
+4. Copy the legacy server-only `service_role` JWT into `SUPABASE_SECRET_KEY`.
+
+The current Java REST client sends the storage credential as a bearer JWT, so it currently requires the legacy
+`service_role` key. Supabase's newer `sb_secret_...` keys use different authorization semantics and require a backend
+code change before they can replace it. Keep this key on the server only: it has elevated access and bypasses Storage
+RLS. See the [Supabase API-key documentation](https://supabase.com/docs/guides/getting-started/api-keys) and the
+[storage migration guide](docs/supabase-storage-migration.md).
+
+### 4. Start PostgreSQL
+
+The Compose file starts only PostgreSQL. It exposes the database on local port `5433`, matching the URL in
+`env_example`.
+
+```bash
+docker compose up -d postgres
+docker compose ps
+```
+
+If port `5433` is already in use, update both the port mapping in `docker-compose.yml` and
+`SPRING_DATASOURCE_URL` in `.env`.
+
+### 5. Run the backend
+
+Windows PowerShell:
+
+```powershell
 .\gradlew.bat bootRun
 ```
 
-The seed is idempotent and preserves existing database records. It adds the `BluePeak Technologies` company, sample
-jobs, posts, an application, bookmarks, notifications, and these demo accounts:
+Linux or macOS:
 
-| Role      | Email                    | Password       |
-|-----------|--------------------------|----------------|
-| Admin     | `admin@hirebean.dev`     | `Admin123!`    |
-| Employer  | `employer@hirebean.dev`  | `Employer123!` |
-| Candidate | `candidate@hirebean.dev` | `Candidate123!` |
+```bash
+./gradlew bootRun
+```
 
-Disable the seed again with:
+If the wrapper is not executable on Linux or macOS, run `chmod +x gradlew` once.
+
+On first startup, the application creates the `CANDIDATE`, `EMPLOYER`, and `ADMIN` roles if they do not exist.
+
+### 6. Verify the installation
+
+- Health: <http://localhost:8080/actuator/health>
+- Swagger UI: <http://localhost:8080/swagger-ui/index.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+
+Windows PowerShell health check:
 
 ```powershell
-Remove-Item Env:APP_SEED_DEMO_DATA
+Invoke-RestMethod http://localhost:8080/actuator/health
 ```
 
-## Supabase Storage setup
+Linux or macOS health check:
 
-The backend uses Supabase Storage instead of AWS S3. It uses the Supabase Storage REST API, so the backend keeps
-object keys in PostgreSQL while images are public and CV files remain private behind short-lived signed URLs.
-
-1. Create a free Supabase project at `https://supabase.com`.
-2. Open Storage and create two file buckets:
-   - `hirebean-public` and mark it **Public** for profile pictures, company logos, and post images.
-   - `hirebean-private` and leave it **Private** for resumes and application CVs.
-3. Open Project Settings -> API and copy the project URL and the server-only `service_role` key.
-4. Put these values in the local, gitignored `.env` file:
-
-```dotenv
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_SECRET_KEY=<server-only-secret-key>
-SUPABASE_PUBLIC_BUCKET=hirebean-public
-SUPABASE_PRIVATE_BUCKET=hirebean-private
-SUPABASE_SIGNED_URL_SECONDS=600
+```bash
+curl http://localhost:8080/actuator/health
 ```
 
-Never expose `SUPABASE_SECRET_KEY` in the frontend or commit it. The backend maps folders as follows:
-`profile-pictures`, `company-logos`, and `post-images` go to the public bucket; `resumes` and `cvs` go to the private
-bucket. Existing database values remain object keys, so no PostgreSQL migration is required for this storage switch.
+## Environment variables
 
-## API groups
+The values below are read from `.env` during local startup or from normal environment variables in deployed
+environments.
 
-- Auth: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`
-- Users/profile: `/api/users`, `/api/users/{id}/profile`, `/api/users/{id}/profile-picture`, `/api/users/{id}/resume`
-- Jobs: `/api/jobs`, `/api/jobs/{id}` with filters `search`, `location`, `minSalary`, `maxSalary`, `companyId`, `tags`
-- Applications: `/api/applications/apply/{candidateId}`, `/api/applications/candidate/{candidateId}`, `/api/applications/job/{jobOfferId}`, `/api/applications/{applicationId}/status`
-- Companies/posts: `/api/companies`, `/api/posts`
-- Bookmarks: `/api/bookmarks/user/{userId}`, `/api/bookmarks/user/{userId}/job/{jobOfferId}`
-- Notifications: `/api/notifications/user/{userId}`, `/api/notifications/user/{userId}/unread-count`, `/api/notifications/user/{userId}/mark-all-read`
-- AI assistant: `/api/ai/prompt`
-- Admin logs: `/api/admin/logs`
+| Variable | Required | Default/example | Purpose |
+|---|---|---|---|
+| `HIREBEAN_DB_USERNAME` | Yes | `hirebean` | PostgreSQL username. It must match the Compose database user. |
+| `HIREBEAN_DB_PASS` | Yes | `change-this-database-password` | PostgreSQL password. Use a secret value outside local development. |
+| `SPRING_DATASOURCE_URL` | Yes | `jdbc:postgresql://localhost:5433/hirebean_db` | JDBC connection URL. Inside the Compose/Kubernetes network the host and port differ. |
+| `MAIL_USERNAME` | For password reset | `your-account@gmail.com` | Gmail SMTP username. |
+| `MAIL_PASSWORD` | For password reset | `replace-with-an-app-password` | Gmail SMTP password or app-specific credential. |
+| `APP_BACKEND_URL` | No | `http://localhost:8080` | Public backend base URL used in password-reset email links. |
+| `APP_FRONTEND_URL` | No | `http://localhost:3000` | Frontend base URL used after reset-token confirmation. |
+| `PORT` | No | `8080` | HTTP server port. |
+| `JWT_SECRET` | Yes | No secure default | HMAC signing secret. Use a random value of at least 32 characters. |
+| `APP_SEED_DEMO_DATA` | No | `false` | Enables idempotent local demo data. Never enable it in shared or production environments. |
+| `SUPABASE_URL` | For file features | `https://your-project-ref.supabase.co` | Supabase project URL. |
+| `SUPABASE_SECRET_KEY` | For file features | No default | Current backend's server-only legacy `service_role` JWT. Never expose it to clients. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Alternative | No default | Supported fallback name when `SUPABASE_SECRET_KEY` is absent. Do not set both. |
+| `SUPABASE_PUBLIC_BUCKET` | No | `hirebean-public` | Public bucket for profile pictures, company logos, and post images. |
+| `SUPABASE_PRIVATE_BUCKET` | No | `hirebean-private` | Private bucket for resumes and application CVs. |
+| `SUPABASE_SIGNED_URL_SECONDS` | No | `600` | Lifetime of generated private-file URLs, in seconds. |
+
+The backend does not use a Supabase publishable key or JWKS URL. Do not add frontend-only Supabase settings to this
+backend's `.env`.
+
+## Local demo data
+
+Demo data is disabled by default. Set `APP_SEED_DEMO_DATA=true` only for a private local database, then restart the
+application. The initializer is idempotent and preserves existing records.
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@hirebean.dev` | `Admin123!` |
+| Employer | `employer@hirebean.dev` | `Employer123!` |
+| Candidate | `candidate@hirebean.dev` | `Candidate123!` |
+
+The seed also creates BluePeak Technologies, sample jobs and posts, an application, bookmarks, and notifications.
+Disable it again after use.
+
+## Useful commands
+
+| Task | Windows | Linux/macOS |
+|---|---|---|
+| Run the backend | `.\gradlew.bat bootRun` | `./gradlew bootRun` |
+| Run tests | `.\gradlew.bat test` | `./gradlew test` |
+| Check formatting | `.\gradlew.bat spotlessCheck` | `./gradlew spotlessCheck` |
+| Apply formatting | `.\gradlew.bat spotlessApply` | `./gradlew spotlessApply` |
+| Build the application | `.\gradlew.bat build` | `./gradlew build` |
+| Start PostgreSQL | `docker compose up -d postgres` | `docker compose up -d postgres` |
+| View PostgreSQL logs | `docker compose logs -f postgres` | `docker compose logs -f postgres` |
+| Stop PostgreSQL | `docker compose down` | `docker compose down` |
+
+The built executable JAR is written under `build/libs/`.
+
+## Authentication quick start
+
+Register or log in through `/api/auth`, then send the returned token on protected requests:
+
+```http
+Authorization: Bearer <token>
+```
+
+Tokens expire after one hour by default. Logout revokes the current token. Detailed authorization rules and all
+48 application endpoints are documented in the [API reference](docs/API_REFERENCE.md).
+
+## Documentation
+
+- [API reference](docs/API_REFERENCE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [DevOps and deployment status](devops-documentation/README.md)
+- [Supabase Storage migration](docs/supabase-storage-migration.md)
+
+## Production caveats
+
+The repository is ready for local development, but the checked-in deployment assets require review before production:
+
+- Kubernetes and CD files still contain obsolete AWS-era settings and incomplete secret wiring. See the
+  [deployment status](devops-documentation/README.md).
+- Hibernate currently uses `ddl-auto: update`; introduce versioned database migrations before controlled production
+  releases.
+- SQL logging and detailed health output are enabled, and CORS currently accepts any origin pattern. Harden these
+  settings for the target environment.
+- Keep demo data disabled, rotate all example credentials, and use an external secret manager.
+- The Supabase credential flow still depends on a legacy `service_role` JWT and should be migrated before that key
+  format is retired.
+- The Compose file is a local PostgreSQL dependency only; it is not a production stack.

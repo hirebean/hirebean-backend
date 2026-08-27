@@ -1,97 +1,151 @@
-# HireBean DevOps & Cloud Infrastructure
+# HireBean DevOps and Deployment Status
 
-This document outlines the cloud architecture, CI/CD processes, and Kubernetes configuration for the HireBean Backend. 
+This document describes the deployment assets that currently exist in the repository. It does not claim that the
+checked-in Kubernetes and continuous-deployment configuration is production-ready.
 
----
+> **Current status:** local development and CI are usable. The Kubernetes manifests and CD workflow still contain
+> obsolete AWS-era settings and broken secret mappings. Repair and validate them before attempting a deployment.
 
-## 1. AWS Cloud Architecture
+## Local infrastructure
 
-We utilize **Amazon Web Services (AWS)** for file storage, strictly decoupling public assets from private sensitive data to ensure maximum security and performance.
+The root [`docker-compose.yml`](../docker-compose.yml) starts a PostgreSQL 17 container only. It is a local dependency,
+not a complete application stack.
 
-### S3 Storage (Secure Data Layer)
-* **Bucket Type:** Private (Block all public access: ON).
-* **Region:** `eu-central-1` (Frankfurt).
-* **Purpose:** Storage for company logos, candidate resumes (CVs), and documents.
-* **Security:** Direct public access via the internet is completely restricted.
-
-### CloudFront CDN (Content Delivery Network)
-Used **exclusively for public assets** (e.g., Company Logos).
-* **Mechanism:** Origin Access Control (OAC).
-* **Workflow:** CloudFront holds a specific cryptographic permission to read from the locked S3 bucket.
-* **Benefits:**
-    * **Edge Caching:** Delivers images from the server closest to the user (Low Latency).
-    * **Security:** Hides the actual S3 bucket origin from the public internet.
-    * **Encryption:** Enforces HTTPS/SSL by default.
-
-### Presigned URLs (Sensitive Data Protection)
-Used **exclusively for Resumes (CVs) and Personal Documents**.
-* **Process:** The Backend generates a temporary, cryptographically signed URL (valid for 10 minutes).
-* **Flow:**
-    1.  A user (e.g., HR) requests access to a candidate's CV.
-    2.  Spring Boot validates permissions (Authentication/Authorization).
-    3.  Spring Boot generates a Signed URL via the AWS SDK.
-    4.  The browser accesses the file directly from S3 using the temporary token.
-* **Compliance:** Ensures GDPR compliance by preventing permanent public access to personal data.
-
----
-
-## 2. CI/CD Pipelines (GitHub Actions)
-
-The project features fully automated pipelines for integration and deployment.
-
-### Continuous Integration (CI)
-Triggered on every `push` or `pull_request` to the `main` branch.
-1.  **Code Checkout & Java Setup:** Installs JDK 23.
-2.  **Code Formatting Check:** Enforces code style using **Spotless** (Google Java Format).
-3.  **Unit Testing:** Executes the full JUnit test suite.
-4.  **Security Scan:** Scans the codebase for vulnerabilities using **Trivy**.
-
-### Continuous Deployment (CD)
-Triggered manually (`workflow_dispatch`) or upon release.
-1.  **Docker Build:** Creates an optimized Docker Image using a Multi-stage build.
-2.  **Docker Push:** Pushes the image to Docker Hub (`uchihadari/hirebean-backend`).
-3.  **Deploy to Kubernetes:**
-    * Creates/Updates the `hirebean` Namespace.
-    * Updates Kubernetes Secrets.
-    * Applies Database and Backend manifests.
-    * Executes a custom **Health Check** script to verify deployment success.
-
----
-
-## 3. Kubernetes (K8s) Configuration
-
-The application is architected to run in a Kubernetes cluster (Kind, Minikube, or Cloud Provider).
-
-### Resource Structure
-| Component | Type | Description |
-| :--- | :--- | :--- |
-| **Backend** | Deployment | The Spring Boot application (ReplicaSet: 1). |
-| **Backend Service** | Service | ClusterIP for internal communication (Port 80 -> 8080). |
-| **Database** | Deployment | PostgreSQL 17 database instance. |
-| **DB Storage** | PVC | PersistentVolumeClaim (1Gi) for data persistence across restarts. |
-| **Secrets** | Secret | Stores encrypted DB credentials and AWS keys. |
-| **Probes** | Liveness/Readiness | *Added:* Spring Boot Actuator integration to ensure zero-downtime deployments. Checks `/actuator/health`. |
-| **Ingress** | Ingress | *Optional:* Configured to expose the application externally via an Ingress Controller (e.g., NGINX). |
-
----
-
-## 4. Local & Production Configuration
-
-### Environment Variables (Required)
-To run the application (locally or in the cluster), the following variables must be provided:
-
-```yaml
-# Database Configuration
-SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirebean_db
-HIREBEAN_DB_USERNAME: <db-user>
-HIREBEAN_DB_PASS: <db-pass>
-
-# AWS Cloud Configuration
-AWS_ACCESS_KEY_ID: <IAM-User-Access-Key>
-AWS_SECRET_ACCESS_KEY: <IAM-User-Secret-Key>
-AWS_BUCKET_NAME: <AWS-Bucket-Name>
-AWS_REGION: <AWS-Region>
-
-# CDN (For Public Logos)
-CDN_URL: [https://dxxxxxxxx.cloudfront.net](https://dxxxxxxxx.cloudfront.net)
+```bash
+docker compose up -d postgres
+docker compose ps
+docker compose logs -f postgres
 ```
+
+The database is exposed as `localhost:5433`; the container listens on `5432`. The matching local JDBC URL is:
+
+```text
+jdbc:postgresql://localhost:5433/hirebean_db
+```
+
+The backend runs separately through the Gradle Wrapper. See the root [setup guide](../README.md).
+
+## Container image
+
+The root [`Dockerfile`](../Dockerfile) is a multi-stage Java 21 build:
+
+1. A Gradle/JDK 21 image builds the executable JAR with tests skipped.
+2. A Java 21 JRE image copies the JAR and listens on port `8080`.
+
+Build and inspect the image locally only after tests have passed:
+
+```bash
+./gradlew test spotlessCheck
+docker build -t hirebean-backend:local .
+```
+
+The container still needs all required environment variables and reachable PostgreSQL, Supabase, and SMTP services.
+The repository does not currently provide a Compose service that wires the backend container to PostgreSQL.
+
+## Continuous integration
+
+The [CI workflow](../.github/workflows/ci.yml) runs on pushes and pull requests to `main`:
+
+1. Check out the repository.
+2. Configure Temurin JDK 21.
+3. Configure Gradle caching/tooling.
+4. Run `spotlessCheck`.
+5. Run the full test suite.
+6. Run a Trivy filesystem scan.
+
+The Trivy step currently uses `exit-code: 0`, so findings are reported but do not fail CI. Change that policy deliberately
+when the team is ready to enforce a vulnerability threshold.
+
+## Kubernetes assets: repair required
+
+The `k8s/` directory contains backend and PostgreSQL Deployments, Services, a database PVC, and a health-check script.
+The backend defines Actuator liveness and readiness probes at `/actuator/health`.
+
+Do not apply the manifests as a production deployment in their current state. Known problems include:
+
+- `k8s/apps/backend/deployment.yaml` still injects removed AWS S3 and CDN settings.
+- The backend Deployment does not inject required `JWT_SECRET`, `SUPABASE_URL`, or a current Supabase storage key.
+- It references separate `mail-secret` and `aws-secret` objects that the CD workflow does not create consistently.
+- The image is hard-coded to `uchihadari/hirebean-backend:latest`, while the workflow builds from a configurable Docker
+  Hub username.
+- The database is a single Deployment with a small PVC; availability, backup, restore, and upgrade procedures are not
+  defined.
+- The backend Service is internal-only. No reviewed Ingress, TLS, DNS, or external load-balancer configuration is
+  checked in.
+
+## Continuous deployment workflow: repair required
+
+The [CD workflow](../.github/workflows/cd.yml) is manual and creates an ephemeral Kind cluster on a GitHub-hosted runner.
+It should be treated as an unfinished deployment experiment, not a persistent environment.
+
+Current blocking defects include:
+
+- `SPRING_DATASOURCE_URL` is populated from the `MAIL_USERNAME` secret.
+- a `CDN_URL` value is populated from `MAIL_PASSWORD` and is also declared twice;
+- obsolete AWS/CDN secrets are created while current Supabase and JWT secrets are absent;
+- shell continuation and secret creation are inconsistent with the secret names consumed by the manifests;
+- applying to the runner's temporary Kind cluster does not deploy to a durable external cluster.
+
+## Required deployment configuration
+
+Any repaired deployment must provide the current backend settings below. Store secret values in the target platform's
+secret manager; do not commit them in manifests or workflow files.
+
+| Setting | Sensitivity | Notes |
+|---|---|---|
+| `SPRING_DATASOURCE_URL` | Configuration | Use the in-cluster database hostname and port, or a managed PostgreSQL URL. |
+| `HIREBEAN_DB_USERNAME` | Secret | PostgreSQL user. |
+| `HIREBEAN_DB_PASS` | Secret | PostgreSQL password. |
+| `JWT_SECRET` | Secret | Random signing value of at least 32 characters. |
+| `SUPABASE_URL` | Configuration | Supabase project URL. |
+| `SUPABASE_SECRET_KEY` | Secret | Current implementation's server-only legacy `service_role` JWT. |
+| `MAIL_USERNAME` | Secret | SMTP account. |
+| `MAIL_PASSWORD` | Secret | SMTP credential. |
+| `APP_BACKEND_URL` | Configuration | Externally reachable backend URL used in email links. |
+| `APP_FRONTEND_URL` | Configuration | Externally reachable frontend URL used for redirects. |
+| `APP_SEED_DEMO_DATA` | Configuration | Must remain `false`. |
+
+Bucket names, signed-URL lifetime, and `PORT` may use the defaults documented in [`env_example`](../env_example) or be
+overridden explicitly.
+
+## Deployment repair checklist
+
+Before calling the Kubernetes/CD path deployable:
+
+1. Remove every AWS/CDN variable and align all manifests with the current environment-variable list.
+2. Define one consistent secret contract and create those secrets through the target platform's secret manager.
+3. Replace the hard-coded image with an immutable registry tag or digest produced by the workflow.
+4. Target a persistent cluster and separate environment-specific configuration from base manifests.
+5. Add reviewed Ingress/TLS/DNS configuration where external access is required.
+6. Replace Hibernate automatic schema updates with versioned database migrations and a rollback plan.
+7. Define PostgreSQL backup, restore, upgrade, resource, and availability procedures.
+8. Restrict CORS, reduce Actuator health detail, disable SQL logging, and keep Swagger exposure intentional.
+9. Migrate the Supabase REST client from the legacy `service_role` JWT to the current secret-key authorization model.
+10. Run tests, formatting, image scanning, manifest validation, rollout checks, and an authenticated API smoke test.
+
+Suggested release gates:
+
+```bash
+./gradlew spotlessCheck test
+docker build -t <registry>/hirebean-backend:<immutable-tag> .
+```
+
+Kubernetes commands should be added only after the manifests and target cluster have been repaired and reviewed.
+
+## Health verification
+
+The application exposes:
+
+- `/actuator/health` for liveness/readiness;
+- `/actuator/info` for application information;
+- `/actuator/metrics` for authenticated metrics access.
+
+A successful health response alone is not a complete deployment test. A smoke test should also register or log in,
+exercise one protected endpoint, verify PostgreSQL persistence, and test one public and one private Supabase object flow.
+
+## Related documentation
+
+- [Project setup and environment variables](../README.md)
+- [API reference](../docs/API_REFERENCE.md)
+- [Architecture](../docs/ARCHITECTURE.md)
+- [Supabase Storage migration](../docs/supabase-storage-migration.md)
