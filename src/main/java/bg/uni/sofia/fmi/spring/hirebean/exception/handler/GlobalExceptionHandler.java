@@ -7,11 +7,14 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @Slf4j
 @RestControllerAdvice
@@ -26,7 +29,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(body);
     }
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ExceptionHandler({
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestParameterException.class,
+        MissingServletRequestPartException.class,
+        HttpMessageNotReadableException.class
+    })
     public ResponseEntity<ErrorResponse> handleInvalidRequestParameters(Exception ex, HttpServletRequest request) {
         ErrorResponse body =
                 ErrorResponse.of(HttpStatus.BAD_REQUEST, "Invalid request parameters.", request.getRequestURI());
